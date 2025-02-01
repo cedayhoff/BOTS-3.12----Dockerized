@@ -4,109 +4,136 @@ import bots.botslib as botslib
 import bots.botsglobal as botsglobal
 import bots.botsinit as botsinit
 
-'''
-no plugin needed.
-run in commandline.
-should give no errors.
-utf-16 etc are reported.
-'''
+"""
+No plugin needed.
+Run in command line.
+Should give no errors.
+Tests various encodings in error messages.
+"""
 
-def testraise(expect,msg2,*args,**kwargs):
+def testraise(expect, msg2, *args, **kwargs):
+    """
+    Raises a BotsError and checks whether the caught exception's string
+    matches the expected text.
+    """
     try:
-        raise botslib.BotsError(msg2,*args,**kwargs)
-    except Exception, msg:
-        if not isinstance(msg,unicode):
-            msg = unicode(msg)
-            #~ print 'not unicode',type(msg),expect
-            #~ print 'Error xxx\n',msg
-        if expect:
-            if unicode(expect) != msg.strip():
-                print expect,'(expected)'
-                print msg,'(received)'
-        txt = botslib.txtexc()
-        if not isinstance(txt,unicode):
-            print 'Error txt\n',txt
-        
+        raise botslib.BotsError(msg2, *args, **kwargs)
+    except Exception as msg:
+        # Ensure we have a standard string representation.
+        if not isinstance(msg, str):
+            msg = str(msg)
 
-# .decode(): bytes->unicode
-# .encode(): unicode -> bytes
+        if expect:
+            if str(expect) != msg.strip():
+                print(f"Expected: {expect}")
+                print(f"Received: {msg.strip()}")
+
+        # Display any traceback text if needed.
+        txt = botslib.txtexc()
+        if not isinstance(txt, str):
+            print("Error in botslib.txtexc():")
+            print(txt)
 
 
 def testrun():
-    print '\n'
-    #normal, valid handling
-    testraise('','',{'test1':'test1','test2':'test2','test3':'test3'})
-    testraise('0test','0test',{'test1':'test1','test2':'test2','test3':'test3'})
-    testraise('0test test1 test2','0test %(test1)s %(test2)s %(test4)s',{'test1':'test1','test2':'test2','test3':'test3'})
-    testraise('1test test1 test2 test3','1test %(test1)s %(test2)s %(test3)s',{'test1':'test1','test2':'test2','test3':'test3'})
-    testraise(u'2test test1 test2 test3',u'2test %(test1)s %(test2)s %(test3)s',{u'test1':u'test1',u'test2':u'test2',u'test3':u'test3'})
-    #different inputs in BotsError
-    testraise(u'3test','3test')
-    testraise(u'4test test1 test2',u'4test %(test1)s %(test2)s %(test3)s',{u'test1':u'test1',u'test2':u'test2'})
-    testraise(u'5test test1 test2',u'5test %(test1)s %(test2)s %(test3)s',test1=u'test1',test2=u'test2')
-    testraise(u'6test',u'6test %(test1)s %(test2)s %(test3)s',u'test1')
-    testraise(u"7test [u'test1', u'test2']",u'7test %(test1)s %(test2)s %(test3)s',test1=[u'test1',u'test2'])
-    testraise(u"8test {u'test1': u'test1', u'test2': u'test2'}",u'8test %(test1)s %(test2)s %(test3)s',test1={u'test1':u'test1',u'test2':u'test2'})
-    testraise(u"9test [<module 'bots.botslib' from '/home/hje/Bots/botsdev/bots/botslib.pyc'>, <module 'bots.botslib' from '/home/hje/Bots/botsdev/bots/botslib.pyc'>]",
-                u'9test %(test1)s %(test2)s %(test3)s',test1=[botslib,botslib])
+    """
+    Tests multiple ways of raising and catching errors with string/bytes/encodings.
+    """
+    print("\n--- Starting test run ---")
 
-    #different charsets in BotsError
-    testraise(u'12test test1 test2 test3',u'12test %(test1)s %(test2)s %(test3)s',{u'test1':u'test1',u'test2':u'test2',u'test3':u'test3'})
-    testraise(u'13test\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202 test1\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202 test2\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202 test3\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202',
-                u'13test\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202 %(test1)s %(test2)s %(test3)s',
-                {u'test1':u'test1\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202',u'test2':u'test2\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202',u'test3':u'test3\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202'})
-    testraise(u'14test\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202 test1\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202',
-                u'14test\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202 %(test1)s'.encode('utf_8'),
-                {u'test1':u'test1\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202'.encode('utf_8')})
-    testraise(u'15test test1',
-                u'15test %(test1)s',
-                {u'test1':u'test1'.encode('utf_16')})
-    testraise(u'16test\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202 test1\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202',
-                u'16test\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202 %(test1)s',
-                {u'test1':u'test1\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202'.encode('utf_16')})
-    testraise(u'17test\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202 test1\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202',
-                u'17test\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202 %(test1)s',
-                {u'test1':u'test1\u00E9\u00EB\u00FA\u00FB\u00FC\u0103\u0178\u01A1\u0202'.encode('utf_32')})
-    testraise(u'18test\u00E9\u00EB\u00FA\u00FB\u00FC test1\u00E9\u00EB\u00FA\u00FB\u00FC',
-                u'18test\u00E9\u00EB\u00FA\u00FB\u00FC %(test1)s',
-                {u'test1':u'test1\u00E9\u00EB\u00FA\u00FB\u00FC'.encode('latin_1')})
-    testraise(u'19test test1',
-                u'19test %(test1)s',
-                {u'test1':u'test1'.encode('cp500')})
-    testraise(u'20test test1',
-                u'20test %(test1)s',
-                {u'test1':u'test1'.encode('euc_jp')})
-    #make utf-8 unicode string,many chars
+    # Normal usage: placeholders with dict or kw-arguments
+    testraise("", "", {"test1": "test1", "test2": "test2", "test3": "test3"})
+    testraise("0test", "0test", {"test1": "test1", "test2": "test2", "test3": "test3"})
+    testraise("0test test1 test2",
+              "0test %(test1)s %(test2)s %(test4)s",
+              {"test1": "test1", "test2": "test2", "test3": "test3"})
+    testraise("1test test1 test2 test3",
+              "1test %(test1)s %(test2)s %(test3)s",
+              {"test1": "test1", "test2": "test2", "test3": "test3"})
+    testraise("2test test1 test2 test3",
+              "2test %(test1)s %(test2)s %(test3)s",
+              {"test1": "test1", "test2": "test2", "test3": "test3"})
+
+    # Different inputs to BotsError
+    testraise("3test", "3test")
+    testraise("4test test1 test2",
+              "4test %(test1)s %(test2)s %(test3)s",
+              {"test1": "test1", "test2": "test2"})
+    testraise("5test test1 test2",
+              "5test %(test1)s %(test2)s %(test3)s",
+              test1="test1", test2="test2")
+    testraise("6test", "6test %(test1)s %(test2)s %(test3)s", "test1")
+    testraise("7test ['test1', 'test2']",
+              "7test %(test1)s %(test2)s %(test3)s",
+              test1=["test1", "test2"])
+    testraise("8test {'test1': 'test1', 'test2': 'test2'}",
+              "8test %(test1)s %(test2)s %(test3)s",
+              test1={"test1": "test1", "test2": "test2"})
+    testraise("9test [<module ...> , <module ...>]",
+              "9test %(test1)s %(test2)s %(test3)s",
+              test1=[botslib, botslib])
+
+    # Unicode chars in messages and placeholders
+    testraise("12test test1 test2 test3",
+              "12test %(test1)s %(test2)s %(test3)s",
+              {"test1": "test1", "test2": "test2", "test3": "test3"})
+    testraise("13testéëúûüăŸơȂ test1éëúûüăŸơȂ test2éëúûüăŸơȂ test3éëúûüăŸơȂ",
+              "13testéëúûüăŸơȂ %(test1)s %(test2)s %(test3)s",
+              {"test1": "test1éëúûüăŸơȂ",
+               "test2": "test2éëúûüăŸơȂ",
+               "test3": "test3éëúûüăŸơȂ"})
+    testraise("14testéëúûüăŸơȂ test1éëúûüăŸơȂ",
+              # Here we encode the message in UTF-8 to mimic old Python2 approach
+              "14testéëúûüăŸơȂ %(test1)s".encode("utf_8"),
+              {"test1": "test1éëúûüăŸơȂ".encode("utf_8")})
+    testraise("15test test1",
+              "15test %(test1)s",
+              {"test1": "test1".encode("utf_16")})
+    testraise("16testéëúûüăŸơȂ test1éëúûüăŸơȂ",
+              "16testéëúûüăŸơȂ %(test1)s",
+              {"test1": "test1éëúûüăŸơȂ".encode("utf_16")})
+    testraise("17testéëúûüăŸơȂ test1éëúûüăŸơȂ",
+              "17testéëúûüăŸơȂ %(test1)s",
+              {"test1": "test1éëúûüăŸơȂ".encode("utf_32")})
+    testraise("18testéëúûü test1éëúûü",
+              "18testéëúûü %(test1)s",
+              {"test1": "test1éëúûü".encode("latin_1")})
+    testraise("19test test1",
+              "19test %(test1)s",
+              {"test1": "test1".encode("cp500")})
+    testraise("20test test1",
+              "20test %(test1)s",
+              {"test1": "test1".encode("euc_jp")})
+
+    # Large-range test in codepoints up to 65535
     l = []
-    for i in xrange(0,pow(256,2)):
-        l.append(unichr(i))
-    s = u''.join(l)
-    print type(s)
-    testraise(u'',s)
-    #~ print type(s)
-    s2 = s.encode('utf-8')
-    print type(s2)
-    testraise(u'',s2)
-    
-    #make iso-8859-1 string,many chars
-    l = []
-    for i in range(0,256):
+    for i in range(256**2):  # 65536
         l.append(chr(i))
-    s = ''.join(l)
-    print type(s)
-    #~ print s
-    testraise(u'',s)
-    s2 = s.decode('latin_1')
-    print type(s2)
-    testraise(u'',s2)
+    s = "".join(l)
+    print(type(s))
+    testraise("", s)  # Raise with a giant unicode string
+
+    s2 = s.encode("utf-8")  # Convert to bytes in UTF-8
+    print(type(s2))
+    testraise("", s2)
+
+    # ISO-8859-1 bytes test
+    l = list(range(256))  # 0..255
+    s_bytes = bytes(l)
+    print(type(s_bytes))
+    testraise("", s_bytes)
+
+    # Decode from latin_1 -> str
+    s2 = s_bytes.decode("latin_1")
+    print(type(s2))
+    testraise("", s2)
 
 
-if __name__ == '__main__':
-    botsinit.generalinit('config')
+if __name__ == "__main__":
+    botsinit.generalinit("config")
     botsinit.initbotscharsets()
-    botsglobal.logger = botsinit.initenginelogging('engine')
-    botsglobal.ini.set('settings','debug','False')
+    botsglobal.logger = botsinit.initenginelogging("engine")
+    botsglobal.ini.set("settings", "debug", "False")
     testrun()
-    botsglobal.ini.set('settings','debug','True')
+    botsglobal.ini.set("settings", "debug", "True")
     testrun()
-    

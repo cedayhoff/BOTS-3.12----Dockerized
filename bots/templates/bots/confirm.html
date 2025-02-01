@@ -1,9 +1,9 @@
 {% extends "admin/base.html" %}
 {% load botsfilters %}
 
-
 {% block content %}
-<form action="{{ form.action }}" method="post">{% csrf_token %}
+<form action="{{ form.action }}" method="post">
+    {% csrf_token %}
     <input onClick="history.back()" type="button" value="Back" />
     <input type="submit" name="2select" value="Change selection" />
     <input type="submit" name="2incoming" value="Incoming (same selection)" />
@@ -17,53 +17,61 @@
         <thead>
             <tr>
                 <th></th>
-                <th><button class="botsheader" type="submit" name="order" value="ts" >Date/time</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="filename" >File</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="ts">Date/time</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="filename">File</button></th>
                 <th><button class="botsheader" type="submit" name="order" value="confirmtype" title="">ConfirmType</button></th>
-                <th><button class="botsheader" >ConfirmFile</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="editype" >Editype</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="messagetype" >Messagetype</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="idroute" >Route</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="fromchannel" >FromChannel</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="tochannel" >ToChannel</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="frompartner" >FromPartner</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="topartner" >ToPartner</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="reference" >Reference</button></th>
+                <th><button class="botsheader">ConfirmFile</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="editype">Editype</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="messagetype">Messagetype</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="idroute">Route</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="fromchannel">FromChannel</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="tochannel">ToChannel</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="frompartner">FromPartner</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="topartner">ToPartner</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="reference">Reference</button></th>
             </tr>
         </thead>
         <tbody>
-        {% for row in queryset.object_list %}
-            <tr class="{% cycle 'row1' 'row2">
+            {% for row in queryset.object_list %}
+            <tr class="{% cycle 'row1' 'row2' %}">
                 <td>
-                    <div class="dropdown"><img class="action" src="/media/images/star.png" />
+                    <div class="dropdown">
+                        <img class="action" src="/media/images/star.png" />
                         <ul>
-                            <li><button class="botsheader" onclick="document.location.href='/detail/?outidta={{row.idta}}'; return false;">View detail</button></li>
-                            <li><button class="botsheader" type="submit" name="confirm" value="{{row.idta}}" >Confirm manual</button></li>
+                            <li>
+                                <button class="botsheader" onclick="document.location.href='/detail/?outidta={{ row.idta }}'; return false;">View detail</button>
+                            </li>
+                            <li>
+                                <button class="botsheader" type="submit" name="confirm" value="{{ row.idta }}">Confirm manual</button>
+                            </li>
                         </ul>
                     </div>
                 </td>
-                <td class="nowrap">{{row.ts|date:"Y-m-d H:i:s"}}</td>
-                <td><a href="/filer/?action=this&amp;idta={{row.idta}}" target="_blank" class="botslink">{{row.filename|shortpath}}</a></td>
-                <td>{{row.confirmtype}}</td>
-                <td>{% if row.confirmidta > 0 %}
-                        <a href="/filer/?action=this&amp;idta={{row.confirmidta}}" target="_blank" class="botslink">{{row.confirmidta}}</a>
-                    {% else  %}
+                <td class="nowrap">{{ row.ts|date:"Y-m-d H:i:s" }}</td>
+                <td>
+                    <a href="/filer/?action=this&amp;idta={{ row.idta }}" target="_blank" class="botslink">{{ row.filename|shortpath }}</a>
+                </td>
+                <td>{{ row.confirmtype }}</td>
+                <td>
+                    {% if row.confirmidta > 0 %}
+                        <a href="/filer/?action=this&amp;idta={{ row.confirmidta }}" target="_blank" class="botslink">{{ row.confirmidta }}</a>
+                    {% else %}
                         {% if row.confirmidta %}
                             Manual confirm
                         {% endif %}
-                    {% endif %}</td>
-                <td class="nowrap">{{row.editype}}</td>
-                <td class="nowrap">{{row.messagetype}}</td>
-                <td class="nowrap">{{row.idroute}}</td>
-                <td class="nowrap">{{row.fromchannel}}</td>
-                <td class="nowrap">{{row.tochannel}}</td>
-                <td class="nowrap">{{row.frompartner}}</td>
-                <td class="nowrap">{{row.topartner}}</td>
-                <td class="nowrap">{{row.reference}}</td>
+                    {% endif %}
+                </td>
+                <td class="nowrap">{{ row.editype }}</td>
+                <td class="nowrap">{{ row.messagetype }}</td>
+                <td class="nowrap">{{ row.idroute }}</td>
+                <td class="nowrap">{{ row.fromchannel }}</td>
+                <td class="nowrap">{{ row.tochannel }}</td>
+                <td class="nowrap">{{ row.frompartner }}</td>
+                <td class="nowrap">{{ row.topartner }}</td>
+                <td class="nowrap">{{ row.reference }}</td>
             </tr>
-        {% endfor %}
+            {% endfor %}
         </tbody>
     </table>
 </form>
 {% endblock %}
-

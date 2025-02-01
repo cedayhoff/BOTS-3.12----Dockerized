@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 import os
 import bots
 # Django settings for bots project.
@@ -22,13 +21,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(PROJECT_PATH, 'botssys/sqlitedb/botsdb'),
-        'USER': '',         #not needed for SQLite
-        'PASSWORD': '',     #not needed for SQLite
-        'HOST': '',         #not needed for SQLite
-        'PORT': '',         #not needed for SQLite
-        'OPTIONS': {},      #not needed for SQLite
-        }
     }
+}
 #~ #MySQL:
 #~ DATABASES = {
     #~ 'default': {
@@ -80,11 +74,14 @@ LOCALE_PATHS = (
 
 #*********path settings*************************
 STATIC_URL = '/media/'
+MEDIA_URL = ''
 STATIC_ROOT = PROJECT_PATH + '/'
+MEDIA_ROOT = PROJECT_PATH + '/media/'
 ROOT_URLCONF = 'bots.urls'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/home'
 LOGOUT_URL = '/logout/'
+CORS_ORIGIN_ALLOW_ALL = True
 #~ LOGOUT_REDIRECT_URL = #not such parameter; is set in urls.py
 ALLOWED_HOSTS = ['*']
 
@@ -100,44 +97,35 @@ SITE_ID = 123
 SECRET_KEY = 'm@-u37qiujmeqfbu$daaaaz)sp^7an4u@ddh=wfx9dd$$$zl2i*x9#awojdc'
 
 #*******template handling and finding*************************************************************************
-TEMPLATES = [       #django >=1.8
+TEMPLATES = [
     {
-    'BACKEND': 'django.template.backends.django.DjangoTemplates',
-    'DIRS': [
-        os.path.join(PROJECT_PATH, 'templates'),
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            os.path.join(PROJECT_PATH, 'templates'),
         ],
-    'APP_DIRS': True,
-    'OPTIONS': {
-        'context_processors': [
-            'django.contrib.auth.context_processors.auth',
-            #~ 'django.template.context_processors.debug',
-            'django.template.context_processors.media', #
-            'django.template.context_processors.static', #
-            'django.template.context_processors.tz',
-            'django.contrib.messages.context_processors.messages',
-            'bots.bots_context.set_context',
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.template.context_processors.media',
+                'django.template.context_processors.static',
+                'django.template.context_processors.tz',
+                'django.contrib.messages.context_processors.messages',
+                'bots.bots_context.set_context',
+                'django.contrib.auth.context_processors.auth',
             ],
         },
     },
 ]
 
-TEMPLATE_CONTEXT_PROCESSORS = (       #django <=1.7
-    'django.contrib.auth.context_processors.auth', 
-    #~ 'django.core.context_processors.debug',
-    'django.core.context_processors.request',
-    'django.contrib.messages.context_processors.messages',
-    'django.core.context_processors.static', #
-    'bots.bots_context.set_context',
-    )
-TEMPLATE_DIRS = (       #django <=1.7
-    os.path.join(PROJECT_PATH, 'templates'),
-    )
 #*******includes for django*************************************************************************
 #save uploaded file (=plugin) always to file. no path for temp storage is used, so system default is used.
-FILE_UPLOAD_HANDLERS = (
+FILE_UPLOAD_HANDLERS = [
     'django.core.files.uploadhandler.TemporaryFileUploadHandler',
-    )
-MIDDLEWARE = (       #django >=1.10
+]
+MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -145,19 +133,16 @@ MIDDLEWARE = (       #django >=1.10
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    )
-MIDDLEWARE_CLASSES = (       #django <=1.9
-    'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    )
-INSTALLED_APPS = (
-    'django.contrib.staticfiles', #
+]
+
+INSTALLED_APPS = [
+    'django.contrib.staticfiles',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.admin',
     'django.contrib.messages',
     'bots',
-    )
+    'oauth2_provider',
+    'corsheaders',
+]

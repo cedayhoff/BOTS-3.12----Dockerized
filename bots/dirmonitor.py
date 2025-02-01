@@ -1,13 +1,19 @@
+#!/usr/bin/env python
 from __future__ import print_function
 import sys
 import os
 import fnmatch
 import threading
 import time
-#bots-modules
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+# Bots modules
 from . import botsinit
 from . import botsglobal
 from . import job2queue
+
+start_time = time.time()
+
 '''
 monitors directories for new files.
 if a new file, lauch a job to the jobqueue server (so: jobqueue-server is needed).
@@ -16,6 +22,18 @@ runs as a daemon/service.
 this module contains separate implementations for linux and windows
 '''
 
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/health':
+            uptime = time.time() - start_time
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.send_header('Access-Control-Allow-Origin', '*') 
+            self.end_headers()
+            self.wfile.write(f"OK - uptime={uptime:.2f}s\n".encode())
+        else:
+            self.send_error(404)
+            
 if os.name == 'nt':
     try:
         import win32file, win32con
@@ -73,54 +91,51 @@ if os.name == 'nt':
                         break       #the route is triggered, do not need to trigger more often
     #end of windows-specific ##################################################################################
 else:
-    #linux specific ###########################################################################################
-    try:
-        import pyinotify
-    except Exception as msg:
-        raise ImportError('Dependency failure: bots directory monitoring requires python library "pyinotify" on linux.')
+    from watchdog.observers import Observer
+    from watchdog.events import FileSystemEventHandler
 
-    class LinuxEventHandler(pyinotify.ProcessEvent):
-        '''
-        incoming event contains:
-            dir=<bool>    check? - looks like the mask does nover contains dirs.
-            mask=0x80
-            maskname=eg IN_MOVED_TO
-            name=<filename>
-            path=<path>
-            pathname=<path>/<filename>
-            wd=<int>     #the watch
-        '''
-        def my_init(self, logger,dir_watch_data,cond,tasks):
+    class LinuxEventHandler(FileSystemEventHandler):
+        def __init__(self, logger, dir_watch_data, cond, tasks):
+            super().__init__()
+            self.logger = logger
             self.dir_watch_data = dir_watch_data
             self.cond = cond
             self.tasks = tasks
-            self.logger = logger
 
-        def process_IN_CREATE(self, event):
-            ''' these events are not needed, but otherwise auto_add does not work....'''
-            pass
+        def on_created(self, event):
+            self._handle_any(event)
 
-        def process_default(self,event):
-            ''' for each incoming event: place route to run in a set. Main thread sends actual job.
-            '''
-            #~ if event.mask == pyinotify.IN_CLOSE_WRITE and event.dir and self.watch_data[event.wd][2]:
-                #~ logger.info('new directory!!"%s %s".',event.)
+        def on_moved(self, event):
+            self._handle_any(event)
+
+        def on_modified(self, event):
+            self._handle_any(event)
+
+        def _handle_any(self, event):
+            # event.src_path = full path
+            # event.is_directory = bool
+            if event.is_directory:
+                return
+            base_name = os.path.basename(event.src_path)
             for dir_watch in self.dir_watch_data:
-                if event.pathname.startswith(dir_watch['path']):
-                    if fnmatch.fnmatch(event.name, dir_watch['filemask']):
+                if event.src_path.startswith(dir_watch['path']):
+                    if fnmatch.fnmatch(base_name, dir_watch['filemask']):
                         self.cond.acquire()
                         self.tasks.add(dir_watch['route'])
                         self.cond.notify()
                         self.cond.release()
 
-    def linux_event_handler(logger,dir_watch_data, cond,tasks):
-        watch_manager = pyinotify.WatchManager()
-        mask = pyinotify.IN_CLOSE_WRITE | pyinotify.IN_MOVED_TO | pyinotify.IN_MODIFY | pyinotify.IN_CREATE
-        for dir_watch in dir_watch_data:
-            watch_manager.add_watch(path=dir_watch['path'],mask=mask,rec=dir_watch['rec'],auto_add=True,do_glob=True)
-        handler = LinuxEventHandler(logger=logger,dir_watch_data=dir_watch_data,cond=cond,tasks=tasks)
-        notifier = pyinotify.Notifier(watch_manager, handler)
-        notifier.loop()
+    def linux_event_handler(logger, dir_watch_data, cond, tasks):
+        observer = Observer()
+        handler = LinuxEventHandler(logger, dir_watch_data, cond, tasks)
+        for dw in dir_watch_data:
+            observer.schedule(handler, dw['path'], recursive=dw['rec'])
+        observer.start()
+        try:
+            observer.join()
+        except KeyboardInterrupt:
+            observer.stop()
+        observer.join()
     #end of linux-specific ##################################################################################
 
 
@@ -137,6 +152,11 @@ def start():
         -c<directory>   directory for configuration files (default: config).
 
     '''%{'name':os.path.basename(sys.argv[0]),'version':botsglobal.version}
+    threading.Thread(
+        target=HTTPServer(('0.0.0.0', 8888), HealthCheckHandler).serve_forever,
+        daemon=True
+    ).start()
+        
     configdir = 'config'
     for arg in sys.argv[1:]:
         if arg.startswith('-c'):
@@ -154,15 +174,15 @@ def start():
         sys.exit(1)
     process_name = 'dirmonitor'
     logger = botsinit.initserverlogging(process_name)
-    logger.log(25,'Bots %(process_name)s started.',{'process_name':process_name})
-    logger.log(25,'Bots %(process_name)s configdir: "%(configdir)s".',{'process_name':process_name,'configdir':botsglobal.ini.get('directories','config')})
-
-    botsenginepath = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),'bots-engine.py')        #get path to bots-engine
+    logger = botsinit.initserverlogging('dirmonitor')
+    botsenginepath = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'bots-engine.py')
     cond = threading.Condition()
     tasks = set()
     dir_watch_data = []
     for section in botsglobal.ini.sections():
         if section.startswith('dirmonitor') and section[len('dirmonitor'):]:
+            watch_path = botsglobal.ini.get(section,'path')
+            print("DEBUG: watch_path is", watch_path)
             dir_watch_data.append({})
             dir_watch_data[-1]['path'] = botsglobal.ini.get(section,'path')
             dir_watch_data[-1]['rec'] = botsglobal.ini.getboolean(section,'recursive',False)
@@ -179,10 +199,10 @@ def start():
             dir_watch_thread.daemon = True  #do not wait for thread when exiting
             dir_watch_thread.start()
     else:
-        #for linux: one watch-thread, but multiple watches.
-        dir_watch_thread = threading.Thread(target=linux_event_handler, args=(logger,dir_watch_data,cond,tasks))
-        dir_watch_thread.daemon = True  #do not wait for thread when exiting
-        dir_watch_thread.start()
+        watch_thread = threading.Thread(target=linux_event_handler,
+                                        args=(logger, dir_watch_data, cond, tasks))
+        watch_thread.daemon = True
+        watch_thread.start()
 
     # this main thread get the results from the watch-thread(s).
     logger.info('Bots %(process_name)s started.',{'process_name':process_name})

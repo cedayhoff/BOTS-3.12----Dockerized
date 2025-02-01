@@ -1,13 +1,13 @@
 {% extends "admin/base.html" %}
 
 {% block content %}
-<form action="{{ form.action }}" method="post">{% csrf_token %}
+<form action="{{ form.action }}" method="post">
+    {% csrf_token %}
     <input onClick="history.back()" type="button" value="Back" />
     <input type="submit" name="2select" value="Change selection" />
     <input type="submit" name="2incoming" value="Incoming (same selection)" />
     <input type="submit" name="2outgoing" value="Outgoing (same selection)" />
     {% include "bots/paginator.html" %}
-
     <table id="botstable">
         {% for hidden in form.hidden_fields %}
             {{ hidden }}
@@ -15,34 +15,33 @@
         <thead>
             <tr>
                 <th></th>
-                <th><button class="botsheader" type="submit" name="order" value="status" >State</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="idroute" >Route</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="ts" >Date/time</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="fromchannel" >FromChannel</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="tochannel" >ToChannel</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="filename" >Process</button></th>
-                <th><button class="botsheader" type="submit" name="order" value="errortext" >Error</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="status">State</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="idroute">Route</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="ts">Date/time</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="fromchannel">FromChannel</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="tochannel">ToChannel</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="filename">Process</button></th>
+                <th><button class="botsheader" type="submit" name="order" value="errortext">Error</button></th>
             </tr>
         </thead>
         <tbody>
-        {% for row in queryset.object_list %}
+            {% for row in queryset.object_list %}
             <tr class="{% cycle 'row1' 'row2' %}">
                 <td>
                     <div class="dropdown">
                         <img class="action" src="/media/images/star.png" />
                     </div>
                 </td>
-                <td>{{row.get_statust_display}}</td>
-                <td>{{row.idroute}}</td>
-                <td class="nowrap">{{row.ts|date:"Y-m-d H:i:s"}}</td>
-                <td>{{row.fromchannel}}</td>
-                <td>{{row.tochannel}}</td>
-                <td>{{row.filename}}</td>
-                <td style="white-space: pre;">{{row.errortext}}</td>
+                <td>{{ row.get_statust_display }}</td>
+                <td>{{ row.idroute }}</td>
+                <td class="nowrap">{{ row.ts|date:"Y-m-d H:i:s" }}</td>
+                <td>{{ row.fromchannel }}</td>
+                <td>{{ row.tochannel }}</td>
+                <td>{{ row.filename }}</td>
+                <td style="white-space: pre;">{{ row.errortext }}</td>
             </tr>
-        {% endfor %}
+            {% endfor %}
         </tbody>
     </table>
 </form>
 {% endblock %}
-

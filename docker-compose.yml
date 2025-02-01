@@ -1,0 +1,70 @@
+version: '3'
+services:
+  jobqueue:
+    build:
+      context: .
+      dockerfile: Dockerfile.bots
+    healthcheck:
+      test: ["CMD", "python3.12", "-c", "import xmlrpc.client; print(xmlrpc.client.ServerProxy('http://localhost:28082').health())"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    container_name: bots-jobqueue
+    hostname: bots-jobqueue
+    command: /bin/sh -c "/opt/cronicle/bin/control.sh start && tail -F /opt/cronicle/logs/cronicle.log & python3.12 bots-jobqueueserver.py"
+    ports:
+      - "28082:28082"
+      - "8883:8888"
+    volumes:
+      - ./bots/botssys:/app/bots/botssys
+      - ./bots/usersys:/app/bots/usersys
+    restart: unless-stopped
+
+  dirmonitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.bots
+    container_name: bots-dirmonitor
+    hostname: bots-dirmonitor
+    command: /bin/sh -c "/opt/cronicle/bin/control.sh start && tail -F /opt/cronicle/logs/cronicle.log & python3.12 bots-dirmonitor.py"
+    ports:
+      - "8881:8888"
+    volumes:
+      - ./bots/botssys:/app/bots/botssys
+      - ./bots/usersys:/app/bots/usersys
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile.bots
+    container_name: bots-webserver
+    hostname: bots-webserver
+    command: /bin/sh -c "/opt/cronicle/bin/control.sh start && tail -F /opt/cronicle/logs/cronicle.log & python3.12 bots-webserver.py"
+    ports:
+      - "8080:8080"
+      - "8882:8888"
+    volumes:
+      - ./bots/botssys:/app/bots/botssys
+      - ./bots/usersys:/app/bots/usersys
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  cronicle:
+    build:
+      context: .
+      dockerfile: Dockerfile.cronicle
+    hostname: "cronicle"
+    container_name: bots-scheduler-cronicle
+    ports:
+      - "3012:3012"
+    restart: unless-stopped

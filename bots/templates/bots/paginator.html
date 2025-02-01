@@ -5,7 +5,7 @@
     <input disabled type="submit" name="first" value="&lt;&lt;" />
     <input disabled type="submit" name="previous" value="&lt;" />
 {% endif %}
-(Page{{ queryset.number }}of{{ queryset.paginator.num_pages }}; {{ queryset.paginator.count }}items)
+(Page {{ queryset.number }} of {{ queryset.paginator.num_pages }}; {{ queryset.paginator.count }} items)
 {% if queryset.has_next %}
     <input type="submit" name="next" value="&gt;" />
     <input type="submit" name="last" value="&gt;&gt;" />

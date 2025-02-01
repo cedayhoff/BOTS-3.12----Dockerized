@@ -345,11 +345,11 @@ def indent_x12(content):
         return content
     return content.replace(sep,sep + '\n')
 
-EDIFACT_INDENT = re.compile('''
-    (?<!\?)     #if no preceding escape (?)
-    '           #apostrophe
-    (?![\n\r])  #if no following CR of LF
-    ''',re.VERBOSE)
+EDIFACT_INDENT = re.compile(r'''
+    (?<!\\\?)    
+    '            
+    (?![\n\r])   
+    ''', re.VERBOSE)
 def indent_edifact(content):
     ''' three options:
         1 is already indented (each segment on separate line)

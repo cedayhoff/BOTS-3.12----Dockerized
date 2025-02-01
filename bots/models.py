@@ -1,11 +1,11 @@
 import sys
-from urllib import quote as urllib_quote
+from urllib.parse import quote as urllib_quote
 import os
 import re
 from django.db import models
 from django.core.validators import validate_integer
 from django.core.exceptions import ValidationError
-from django.utils.encoding import python_2_unicode_compatible
+from django.utils.safestring import mark_safe
 from . import botsglobal
 from . import validate_email
 ''' Declare database tabels.
@@ -145,7 +145,7 @@ class StripCharField(models.CharField):
     def get_prep_value(self, value,*args,**kwargs):
         ''' Convert Python objects (value) to query values (returned)
         '''
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             return value.strip()
         else:
             return value
@@ -169,16 +169,21 @@ def script_link1(script,linktext):
     if os.path.exists(script):
         return '<a href="/srcfiler/?src=%s" target="_blank">%s</a>'%(urllib_quote(script.encode("utf-8")),linktext)
     else:
-        return '<img src="/media/admin/img/icon-no.gif"></img> %s'%linktext
+        return mark_safe(
+            '<img src="/media/admin/img/icon-no.gif"></img>'
+        )
 
 def script_link2(script):
-    ''' if script exists return "yes" icon + view link; else return "no" icon
-        used in routes, channels (scripts are optional)
-    '''
     if os.path.exists(script):
-        return '<a class="nowrap" href="/srcfiler/?src=%s" target="_blank"><img src="/media/admin/img/icon-yes.gif"></img> view</a>'%urllib_quote(script.encode("utf-8"))
+        return mark_safe(
+            '<a class="nowrap" href="/srcfiler/?src=%s" target="_blank">'
+            '<img src="/media/admin/img/icon-yes.gif"></img> view</a>'
+            % urllib_quote(script.encode("utf-8"))
+        )
     else:
-        return '<img src="/media/admin/img/icon-no.gif"></img>'
+        return mark_safe(
+            '<img src="/media/admin/img/icon-no.gif"></img>'
+        )
 
 
 class MultipleEmailField(models.CharField):
@@ -190,7 +195,7 @@ class TextAsInteger(models.CharField):
 #***********************************************************************************
 #******** written by webserver ********************************************************
 #***********************************************************************************
-@python_2_unicode_compatible
+
 class confirmrule(models.Model):
     #~ id = models.IntegerField(primary_key=True)
     active = models.BooleanField(default=False)
@@ -206,22 +211,22 @@ class confirmrule(models.Model):
     rsrv1 = StripCharField(max_length=35,blank=True,null=True)  #added 20100501
     rsrv2 = models.IntegerField(null=True)                        #added 20100501
     def __str__(self):
-        return unicode(self.confirmtype) + ' ' + unicode(self.ruletype)
+        return str(self.confirmtype) + ' ' + str(self.ruletype)
     class Meta:
         db_table = 'confirmrule'
         verbose_name = 'confirm rule'
         ordering = ['confirmtype','ruletype','negativerule','frompartner','topartner','idroute','idchannel','messagetype']
-@python_2_unicode_compatible
+
 class ccodetrigger(models.Model):
     ccodeid = StripCharField(primary_key=True,max_length=35,verbose_name='Type of user code')
     ccodeid_desc = models.TextField(blank=True,null=True,verbose_name='Description')
     def __str__(self):
-        return unicode(self.ccodeid)
+        return str(self.ccodeid)
     class Meta:
         db_table = 'ccodetrigger'
         verbose_name = 'user code type'
         ordering = ['ccodeid']
-@python_2_unicode_compatible
+
 class ccode(models.Model):
     #~ id = models.IntegerField(primary_key=True)     #added 20091221
     ccodeid = models.ForeignKey(ccodetrigger,on_delete=models.CASCADE,verbose_name='Type of user code')
@@ -236,13 +241,13 @@ class ccode(models.Model):
     attr7 = StripCharField(max_length=35,blank=True)
     attr8 = StripCharField(max_length=35,blank=True)
     def __str__(self):
-        return unicode(self.ccodeid) + ' ' + unicode(self.leftcode) + ' ' + unicode(self.rightcode)
+        return str(self.ccodeid) + ' ' + str(self.leftcode) + ' ' + str(self.rightcode)
     class Meta:
         db_table = 'ccode'
         verbose_name = 'user code'
         unique_together = (('ccodeid','leftcode','rightcode'),)
         ordering = ['ccodeid','leftcode']
-@python_2_unicode_compatible
+
 class channel(models.Model):
     idchannel = StripCharField(max_length=35,primary_key=True)
     inorout = StripCharField(max_length=35,choices=INOROUT,verbose_name='in/out')
@@ -277,7 +282,6 @@ class channel(models.Model):
 
     def communicationscript(self):
         return script_link2(os.path.join(botsglobal.ini.get('directories','usersysabs'),'communicationscripts', self.idchannel + '.py'))
-    communicationscript.allow_tags = True
     communicationscript.short_description = 'User script'
 
     class Meta:
@@ -285,7 +289,7 @@ class channel(models.Model):
         db_table = 'channel'
     def __str__(self):
         return self.idchannel + ' (' + self.type + ')'
-@python_2_unicode_compatible
+
 class partner(models.Model):
     idpartner = StripCharField(max_length=35,primary_key=True,verbose_name='partner identification')
     active = models.BooleanField(default=False)
@@ -321,7 +325,7 @@ class partner(models.Model):
         ordering = ['idpartner']
         db_table = 'partner'
     def __str__(self):
-        return unicode(self.idpartner) + ' (' + unicode(self.name) + ')'
+        return str(self.idpartner) + ' (' + str(self.name) + ')'
     def save(self, *args, **kwargs):
         if isinstance(self,partnergroep):
             self.isgroup = True
@@ -335,7 +339,7 @@ class partnergroep(partner):
         ordering = ['idpartner']
         db_table = 'partner'
 
-@python_2_unicode_compatible
+
 class chanpar(models.Model):
     #~ id = models.IntegerField(primary_key=True)     #added 20091221
     idpartner = models.ForeignKey(partner,on_delete=models.CASCADE,verbose_name='partner')
@@ -351,8 +355,8 @@ class chanpar(models.Model):
         verbose_name = 'email address per channel'
         verbose_name_plural = 'email address per channel'
     def __str__(self):
-        return unicode(self.idpartner) + ' ' + unicode(self.idchannel) + ' ' + unicode(self.mail)
-@python_2_unicode_compatible
+        return str(self.idpartner) + ' ' + str(self.idchannel) + ' ' + str(self.mail)
+
 class translate(models.Model):
     #~ id = models.IntegerField(primary_key=True)
     active = models.BooleanField(default=False)
@@ -394,9 +398,9 @@ class translate(models.Model):
         verbose_name = 'translation rule'
         ordering = ['fromeditype','frommessagetype','frompartner','topartner','alt']
     def __str__(self):
-        return unicode(self.fromeditype) + ' ' + unicode(self.frommessagetype) + ' ' + unicode(self.alt) + ' ' + unicode(self.frompartner) + ' ' + unicode(self.topartner)
+        return str(self.fromeditype) + ' ' + str(self.frommessagetype) + ' ' + str(self.alt) + ' ' + str(self.frompartner) + ' ' + str(self.topartner)
 
-@python_2_unicode_compatible
+
 class routes(models.Model):
     #~ id = models.IntegerField(primary_key=True)
     idroute = StripCharField(max_length=35,db_index=True,help_text='Identification of route; a composite route consists of multiple parts having the same "idroute".')
@@ -439,16 +443,24 @@ class routes(models.Model):
         unique_together = (('idroute','seq'),)
         ordering = ['idroute','seq']
     def __str__(self):
-        return unicode(self.idroute) + ' ' + unicode(self.seq)
+        return str(self.idroute) + ' ' + str(self.seq)
     def translt(self):
         if self.translateind == 0:
-            return '<img alt="%s" src="/media/admin/img/icon-no.gif"></img>'%(self.get_translateind_display())
+            return mark_safe(
+            '<img src="/media/admin/img/icon-no.gif"></img>'
+        )
         elif self.translateind == 1:
-            return '<img alt="%s" src="/media/admin/img/icon-yes.gif"></img>'%(self.get_translateind_display())
+            return mark_safe(
+            '<img src="/media/admin/img/icon-yes.gif"></img>'
+        )
         elif self.translateind == 2:
-            return '<img alt="%s" src="/media/images/icon-pass.gif"></img>'%(self.get_translateind_display())
+            return mark_safe(
+            '<img src="/media/admin/img/icon-pass.gif"></img>'
+        )
         elif self.translateind == 3:
-            return '<img alt="%s" src="/media/images/icon-pass_parse.gif"></img>'%(self.get_translateind_display())
+            return mark_safe(
+            '<img src="/media/admin/img/icon-parse.gif"></img>'
+        )
     translt.allow_tags = True
     translt.admin_order_field = 'translateind'
 

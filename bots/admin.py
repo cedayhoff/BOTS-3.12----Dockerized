@@ -15,7 +15,7 @@ from . import botsglobal
 class BotsAdmin(admin.ModelAdmin):
     ''' all classes in this module are sub-classed from BotsAdmin.
     '''
-    list_per_page = botsglobal.ini.getint('settings','adminlimit',botsglobal.ini.getint('settings','limit',30))
+    #list_per_page = botsglobal.ini.getint('settings','adminlimit',botsglobal.ini.getint('settings','limit',30))
     save_as = True
     def activate(self, request, queryset):
         ''' handles the admin 'activate' action.'''

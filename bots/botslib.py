@@ -356,30 +356,21 @@ def txtexc():
         terug = terug.replace('bots.botslib.','')
         return terug
 
-def safe_unicode(value):    #python2
-    ''' For errors: return best possible unicode...should never lead to errors.
-    '''
-    #~ print('safe_unicode00')
-    try:
-        if isinstance(value, unicode):      #is already unicode, just return
-            return value
-        elif isinstance(value, str):        #string/bytecode, encoding unknown.
-            for charset in ['utf_8','latin_1']:
-                try:
-                    return value.decode(charset, 'strict')  #decode strict
-                except:
-                    continue
-            print('safe_unicode33')     #should never get here?
-            return value.decode('utf_8', 'ignore')  #decode as if it is utf-8, ignore errors.
-        else:
-            #~ print('safe_unicode11',type(value))
-            return unicode(value)
-    except Exception as msg:
-        print('safe_unicode22',msg)
-        try:
-            return unicode(repr(value))
-        except:
-            return 'Error while displaying error'
+def safe_unicode(value):
+    '''Simplified Python 3 version of safe_unicode.'''
+    if isinstance(value, str):
+        return value
+    elif isinstance(value, bytes):
+        # Try decodes:
+        for charset in ['utf-8','latin-1']:
+            try:
+                return value.decode(charset)
+            except:
+                pass
+        # Fallback ignore
+        return value.decode('utf-8','ignore')
+    else:
+        return str(value)
 
 
 class ErrorProcess(NewTransaction):
@@ -401,7 +392,7 @@ def botsbaseimport(modulename):
     ''' Do a dynamic import.
         Errors/exceptions are handled in calling functions.
     '''
-    return importlib.import_module(modulename.encode(sys.getfilesystemencoding()),'bots')
+    return importlib.import_module(modulename, 'bots')
 
 def botsimport(*args):
     ''' import modules from usersys.
@@ -846,15 +837,12 @@ class BotsError(Exception):
     '''
     def __init__(self, msg,*args,**kwargs):
         self.msg = safe_unicode(msg)
-        if args:    #expect args[0] to be a dict
-            if isinstance(args[0],dict):
-                xxx = args[0]
-            else:
-                xxx = {}
+        if args and isinstance(args[0],dict):
+            x_dict = args[0]
         else:
-            xxx = kwargs
-        self.xxx = collections.defaultdict(unicode)
-        for key,value in xxx.items():
+            x_dict = kwargs
+        self.xxx = collections.defaultdict(str)  # was defaultdict(unicode)
+        for key,value in x_dict.items():
             self.xxx[safe_unicode(key)] = safe_unicode(value)
     def __unicode__(self):
         try:

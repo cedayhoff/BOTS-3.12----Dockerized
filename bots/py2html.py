@@ -11,7 +11,7 @@ __author__ = 'Raymond Hettinger'
 # The whole string is one token so the line numbers on those lines get the string
 # highlight colour. No simple way to fix this, but it's not really an issue.
 import sys
-import __builtin__ as builtins
+import builtins
 import keyword
 import tokenize
 import cgi

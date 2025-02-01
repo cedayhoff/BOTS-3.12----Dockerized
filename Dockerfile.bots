@@ -1,0 +1,46 @@
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && apt-get install -y \
+        wget \
+        build-essential \
+        pkg-config \
+        libmysqlclient-dev \
+        libpq-dev \
+        python3.12 \
+        python3.12-dev \
+        python3.12-venv \
+        ca-certificates \
+        git && \
+    apt-get clean
+
+RUN python3.12 -m ensurepip --upgrade
+WORKDIR /app
+
+COPY requirements.txt /app/
+RUN python3.12 -m pip install --no-cache-dir -r requirements.txt
+RUN mkdir -p /dirmonitor
+
+COPY . /app
+RUN python3.12 setup.py install
+
+RUN apt-get update && apt-get install -y \
+    curl gnupg && \
+    curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean
+
+RUN curl -s https://raw.githubusercontent.com/jhuckaby/Cronicle/master/bin/install.js | node
+
+COPY cronicle/config.json /opt/cronicle/conf/config.json
+
+CMD ["sh", "-c", " \
+  /opt/cronicle/bin/control.sh start && \
+  tail -F /opt/cronicle/logs/cronicle.log \
+"]
+
+
+EXPOSE 8080

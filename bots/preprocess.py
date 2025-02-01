@@ -87,7 +87,7 @@ def postprocess(routedict,function,status=FILEOUT,rootidta=None,**argv):
     return nr_files
 
 #regular expression for mailbag.
-HEADER = re.compile('''
+HEADER = re.compile(r"""
     \s*
     (
         (?P<edifact>
@@ -114,7 +114,7 @@ HEADER = re.compile('''
             I[\n\r]*S[\n\r]*A
         )
     )
-    ''',re.DOTALL|re.VERBOSE)
+    """, re.DOTALL | re.VERBOSE)
 
 def mailbag(ta_from,endstatus,frommessagetype,**argv):
     ''' 2 main functions:
@@ -168,18 +168,20 @@ def mailbag(ta_from,endstatus,frommessagetype,**argv):
                 elif count == 106:
                     record_sep = char
                     break
-            foundtrailer = re.search('''%(record_sep)s
+            foundtrailer = re.search(
+                                        r"""%(record_sep)s
                                         \s*
                                         I[\n\r]*E[\n\r]*A
                                         .+?
                                         %(record_sep)s
-                                        '''%{'record_sep':re.escape(record_sep)},
+                                        """ % {'record_sep': re.escape(record_sep)},
                                         edifile[headpos:],re.DOTALL|re.VERBOSE)
             if not foundtrailer:
-                foundtrailer2 = re.search('''%(record_sep)s
+                foundtrailer2 = re.search(
+                                            r"""%(record_sep)s
                                             \s*
                                             I[\n\r]*E[\n\r]*A
-                                            '''%{'record_sep':re.escape(record_sep)},
+                                            """ % {'record_sep': re.escape(record_sep)},
                                             edifile[headpos:],re.DOTALL|re.VERBOSE)
                 if foundtrailer2:
                     raise botslib.InMessageError('[M60]: Found no segment terminator for IEA trailer at position %(pos)s.',{'pos':foundtrailer2.start()})
@@ -215,16 +217,17 @@ def mailbag(ta_from,endstatus,frommessagetype,**argv):
                 else:
                     raise botslib.InMessageError('[M57]: Edifact file with non-standard separators. UNA segment should be used.')
             #search trailer
-            foundtrailer = re.search('''[^%(escape)s\n\r]       #char that is not escape or cr/lf
-                                        [\n\r]*?                #maybe some cr/lf's
-                                        %(record_sep)s          #segment separator
-                                        \s*                     #whitespace between segments
-                                        U[\n\r]*N[\n\r]*Z       #UNZ
-                                        .+?                     #any chars
-                                        [^%(escape)s\n\r]       #char that is not escape or cr/lf
-                                        [\n\r]*?                #maybe some cr/lf's
-                                        %(record_sep)s          #segment separator
-                                        '''%{'escape':escape,'record_sep':re.escape(record_sep)},
+            foundtrailer = re.search(
+                                        r"""[^%(escape)s\n\r]
+                                        [\n\r]*?
+                                        %(record_sep)s
+                                        \s*
+                                        U[\n\r]*N[\n\r]*Z
+                                        .+?
+                                        [^%(escape)s\n\r]
+                                        [\n\r]*?
+                                        %(record_sep)s
+                                        """ % {'escape': escape, 'record_sep': re.escape(record_sep)},
                                         edifile[headpos:],re.DOTALL|re.VERBOSE)
             if not foundtrailer:
                 raise botslib.InMessageError('[M58]: Found no valid UNZ trailer for the UNB header at position %(pos)s.',{'pos':headpos})
@@ -234,16 +237,17 @@ def mailbag(ta_from,endstatus,frommessagetype,**argv):
             record_sep = "'"
             escape = '?'
             headpos = startpos + found.start('STX')
-            foundtrailer = re.search('''[^%(escape)s\n\r]       #char that is not escape or cr/lf
-                                        [\n\r]*?                #maybe some cr/lf's
-                                        %(record_sep)s          #segment separator
-                                        \s*                     #whitespace between segments
+            foundtrailer = re.search(
+                                        r"""[^%(escape)s\n\r]
+                                        [\n\r]*?
+                                        %(record_sep)s
+                                        \s*
                                         E[\n\r]*N[\n\r]*D
                                         .+?
-                                        [^%(escape)s\n\r]       #char that is not escape or cr/lf
-                                        [\n\r]*?                #maybe some cr/lf's
-                                        %(record_sep)s          #segment separator
-                                        '''%{'escape':escape,'record_sep':re.escape(record_sep)},
+                                        [^%(escape)s\n\r]
+                                        [\n\r]*?
+                                        %(record_sep)s
+                                        """ % {'escape': escape, 'record_sep': re.escape(record_sep)},
                                         edifile[headpos:],re.DOTALL|re.VERBOSE)
             if not foundtrailer:
                 raise botslib.InMessageError('[M59]: Found no valid END trailer for the STX header at position %(pos)s.',{'pos':headpos})

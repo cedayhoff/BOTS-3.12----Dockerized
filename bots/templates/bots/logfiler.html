@@ -1,23 +1,27 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+{% load static %}
+<!DOCTYPE html>
+<html>
 <head>
     <title>Bots Log File Viewer</title>
-    <META Http-Equiv="Pragma" Content="no-cache" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <link rel="stylesheet" type="text/css" href="{% static 'css/bots.css' %}" />
 </head>
-
 <body>
-    {% if error_content %} 
-        {{ error_content }} 
+    {% if error_content %}
+        {{ error_content }}
     {% else %}
-        <table id="log" border="1" cellpadding=5>
+        <table id="log" border="1" cellpadding="5">
             <tr>
-                <td><b>logfiles</b></td>
-                <td><b>{{ log }}</b>&nbsp;&nbsp;&nbsp;&nbsp;<a href="/logfiler/?log={{ log }}&amp;action=download">Download</a></td>
+                <td><strong>Logfiles</strong></td>
+                <td>
+                    <strong>{{ log }}</strong>&nbsp;&nbsp;&nbsp;&nbsp;
+                    <a href="/logfiler/?log={{ log }}&amp;action=download">Download</a>
+                </td>
             </tr>
             <tr>
                 <td valign="top">
                     {% for file in logfiles %}
-                        <a href="/logfiler/?log={{ file }}">{{ file }}</a><br>
+                        <a href="/logfiler/?log={{ file }}">{{ file }}</a><br/>
                     {% endfor %}
                 </td>
                 <td valign="top" colspan="2">
@@ -28,4 +32,3 @@
     {% endif %}
 </body>
 </html>
- 

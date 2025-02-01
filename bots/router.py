@@ -29,7 +29,7 @@ class new(object):
         self.keep_track_if_outchannel_deferred = {}
 
     def run(self):
-        print 'start new.run'
+        print('start new.run')
         for route in self.routestorun:
             botslib.setrouteid(route)
             self.router(route)

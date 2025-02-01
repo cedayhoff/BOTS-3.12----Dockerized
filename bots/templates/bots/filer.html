@@ -1,56 +1,68 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+{% load static %}
+<!DOCTYPE html>
+<html>
 <head>
-	<title>Bots File Viewer</title>
-    <META Http-Equiv="Pragma" Content="no-cache" />
-    <link rel="stylesheet" type="text/css" href="/media/css/bots.css" />
+    <title>Bots File Viewer</title>
+    <meta http-equiv="Pragma" content="no-cache" />
+    <link rel="stylesheet" type="text/css" href="{% static 'css/bots.css' %}" />
 </head>
-
 <body>
-	{% if error_content %} 
-		{{ error_content }} 
-	{% else %}
-		<div">
-			{% for ta in idtas %}
-				<table border="1" cellpadding="3" cellspacing="0" >
-				<tr>
-				<td width="90px" align="center">{% if ta.has_previous %}<a href="/filer/?action=previous&amp;idta={{ta.idta}}">Previous</a>{% endif %}</td>
-				<td width="90px" align="center">{% if ta.has_next %}<a href="/filer/?action=next&amp;idta={{ta.idta}}">Next</a>{% endif %}</td>
-				<td width="90px" align="center">{% if ta.has_file %}<a href="/filer/?action=downl&amp;idta={{ta.idta}}">Download</a>{% endif %}</td>
-				<td width="90px" align="center">{{ ta.get_status_display }}</td>
-				<td width="90px">
-					<div class="info" align="center">info
-						<table>
-							<tr><td>Status</td><td>{{ ta.get_statust_display }}</td></tr>
-							<tr><td>Date/time</td><td>{{ ta.ts|date:"Y-m-d H:i:s" }}</td></tr>
-							<tr><td>Reference</td><td>{{ ta.reference }}</td></tr>
-							<tr><td>Editype</td><td>{{ ta.editype }}</td></tr>
-							<tr><td>Messagetype</td><td>{{ ta.messagetype }}</td></tr>
-							<tr><td>Route</td><td>{{ ta.idroute }}</td></tr>
-							<tr><td>FromChannel</td><td>{{ ta.fromchannel }}</td></tr>
-							<tr><td>ToChannel</td><td>{{ ta.tochannel }}</td></tr>
-							<tr><td>Frompartner</td><td>{{ ta.frompartner }}</td></tr>
-							<tr><td>Topartner</td><td>{{ ta.topartner }}</td></tr>
-							<tr><td>Nrmessages</td><td>{{ ta.nrmessages }}</td></tr>
-							<tr><td>Filesize</td><td>{{ ta.filesize }}</td></tr>
-							<tr><td>Charset</td><td>{{ ta.charset }}</td></tr>
-							<tr><td>Test</td><td>{{ ta.testindicator }}</td></tr>
-							<tr><td>Contenttype</td><td>{{ ta.contenttype }}</td></tr>
-							<tr><td>Botskey</td><td>{{ ta.botskey }}</td></tr>
-							<tr><td>Alt</td><td>{{ ta.alt }}</td></tr>
-							<tr><td>Merge</td><td>{{ ta.merge }}</td></tr>
-							<tr><td>Envelope</td><td>{{ ta.envelope }}</td></tr>
-							<tr><td>File</td><td>{{ ta.filename }}</td></tr>
-						</table>
-					</div>
-				</td>
-				</tr>
-				</table>
-				<pre>{{ ta.content }}</pre>
-				<hr/>
-			{% endfor %}
-		</div>
-	{% endif %}
+    {% if error_content %}
+        {{ error_content }}
+    {% else %}
+        <div>
+            {% for ta in idtas %}
+                <table border="1" cellpadding="3" cellspacing="0">
+                    <tr>
+                        <td width="90" align="center">
+                            {% if ta.has_previous %}
+                                <a href="/filer/?action=previous&amp;idta={{ ta.idta }}">Previous</a>
+                            {% endif %}
+                        </td>
+                        <td width="90" align="center">
+                            {% if ta.has_next %}
+                                <a href="/filer/?action=next&amp;idta={{ ta.idta }}">Next</a>
+                            {% endif %}
+                        </td>
+                        <td width="90" align="center">
+                            {% if ta.has_file %}
+                                <a href="/filer/?action=downl&amp;idta={{ ta.idta }}">Download</a>
+                            {% endif %}
+                        </td>
+                        <td width="90" align="center">{{ ta.get_status_display }}</td>
+                        <td width="90">
+                            <div class="info" align="center">
+                                info
+                                <table>
+                                    <tr><td>Status</td><td>{{ ta.get_statust_display }}</td></tr>
+                                    <tr><td>Date/time</td><td>{{ ta.ts|date:"Y-m-d H:i:s" }}</td></tr>
+                                    <tr><td>Reference</td><td>{{ ta.reference }}</td></tr>
+                                    <tr><td>Editype</td><td>{{ ta.editype }}</td></tr>
+                                    <tr><td>Messagetype</td><td>{{ ta.messagetype }}</td></tr>
+                                    <tr><td>Route</td><td>{{ ta.idroute }}</td></tr>
+                                    <tr><td>FromChannel</td><td>{{ ta.fromchannel }}</td></tr>
+                                    <tr><td>ToChannel</td><td>{{ ta.tochannel }}</td></tr>
+                                    <tr><td>Frompartner</td><td>{{ ta.frompartner }}</td></tr>
+                                    <tr><td>Topartner</td><td>{{ ta.topartner }}</td></tr>
+                                    <tr><td>Nrmessages</td><td>{{ ta.nrmessages }}</td></tr>
+                                    <tr><td>Filesize</td><td>{{ ta.filesize }}</td></tr>
+                                    <tr><td>Charset</td><td>{{ ta.charset }}</td></tr>
+                                    <tr><td>Test</td><td>{{ ta.testindicator }}</td></tr>
+                                    <tr><td>Contenttype</td><td>{{ ta.contenttype }}</td></tr>
+                                    <tr><td>Botskey</td><td>{{ ta.botskey }}</td></tr>
+                                    <tr><td>Alt</td><td>{{ ta.alt }}</td></tr>
+                                    <tr><td>Merge</td><td>{{ ta.merge }}</td></tr>
+                                    <tr><td>Envelope</td><td>{{ ta.envelope }}</td></tr>
+                                    <tr><td>File</td><td>{{ ta.filename }}</td></tr>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <pre>{{ ta.content }}</pre>
+                <hr/>
+            {% endfor %}
+        </div>
+    {% endif %}
 </body>
 </html>
- 

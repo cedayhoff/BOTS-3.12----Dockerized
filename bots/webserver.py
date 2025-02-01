@@ -13,8 +13,25 @@ except ImportError:
 import cherrypy
 from . import botsglobal
 from . import botsinit
+import collections
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+import time
 
+start_time = time.time()
 
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/health':
+            uptime = time.time() - start_time
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.send_header('Access-Control-Allow-Origin', '*') 
+            self.end_headers()
+            self.wfile.write(f"OK - uptime={uptime:.2f}s\n".encode())
+        else:
+            self.send_error(404)
+            
 def start():
     #NOTE: bots directory should always be on PYTHONPATH - otherwise it will not start.
     #***command line arguments**************************
@@ -80,6 +97,11 @@ def start():
 
     #***start the cherrypy webserver.************************************************
     try:
+        threading.Thread(
+            target=HTTPServer(('0.0.0.0', 8888), HealthCheckHandler).serve_forever,
+            daemon=True
+        ).start()
+        
         botswebserver.start()
     except KeyboardInterrupt:
         botswebserver.stop()

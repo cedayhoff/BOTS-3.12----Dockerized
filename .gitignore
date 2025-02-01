@@ -1,0 +1,4 @@
+bots/botssys/*
+!bots/botssys/sqlitedb/
+
+bots/usersys/*
