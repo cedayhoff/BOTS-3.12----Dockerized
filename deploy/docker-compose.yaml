@@ -1,0 +1,56 @@
+services:
+  jobqueue:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: bots-jobqueue
+    hostname: bots-jobqueue
+    ports:
+      - "28082:28082"
+      - "8883:8888"
+    restart: unless-stopped
+    command: ["python3.12", "bots-jobqueueserver.py"]
+    environment:
+      - BOTS_DB_ENGINE=${BOTS_DB_ENGINE}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+
+  dirmonitor:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: bots-dirmonitor
+    hostname: bots-dirmonitor
+    ports:
+      - "8881:8888"
+    restart: unless-stopped
+    command: ["python3.12", "bots-dirmonitor.py"]
+    environment:
+      - BOTS_DB_ENGINE=${BOTS_DB_ENGINE}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+
+  webserver:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: bots-webserver
+    hostname: bots-webserver
+    ports:
+      - "8080:8080"
+      - "8882:8888"
+    restart: unless-stopped
+    command: ["python3.12", "bots-webserver.py"]
+    environment:
+      - BOTS_DB_ENGINE=${BOTS_DB_ENGINE}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}

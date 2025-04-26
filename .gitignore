@@ -1,4 +1,32 @@
-bots/botssys/*
-!bots/botssys/sqlitedb/
+# Ignore the SQLite system files and log files
+src/bots/botssys/*
+!src/bots/botssys/sqlitedb/
 
-bots/usersys/*
+# Ignore the user system files
+src/bots/usersys/*
+
+# Ignore environment variables
+.env
+
+# Python stuff
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc.*
+
+# Django stuff
+*.log
+db.sqlite3
+
+# Docker artifacts
+*.pid
+
+# VSCode/IDE/editor stuff
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# MacOS
+.DS_Store
