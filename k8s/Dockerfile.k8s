@@ -1,0 +1,36 @@
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && apt-get install -y \
+        wget \
+        build-essential \
+        pkg-config \
+        libmysqlclient-dev \
+        libpq-dev \
+        python3.12 \
+        python3.12-dev \
+        python3.12-venv \
+        ca-certificates \
+        git && \
+    apt-get clean
+
+RUN python3.12 -m ensurepip --upgrade
+
+WORKDIR /app
+COPY ./requirements.txt /app/
+RUN python3.12 -m pip install --no-cache-dir -r requirements.txt
+
+# ⬇️ Copy the WHOLE `src/` into `/app/`, just like your docker-compose build
+COPY ./src/ /app/
+
+COPY ./deploy/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+CMD ["python3.12", "bots-jobqueueserver.py"]
+
+EXPOSE 8080 8888 28082

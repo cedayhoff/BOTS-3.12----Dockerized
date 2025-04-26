@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bots-webserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bots-webserver
+  template:
+    metadata:
+      labels:
+        app: bots-webserver
+    spec:
+      containers:
+      - name: bots-webserver
+        image: ghcr.io/cedayhoff/bots
+        ports:
+        - containerPort: 8080
+        envFrom:
+          - configMapRef:
+              name: bots-config
+          - secretRef:
+              name: bots-secrets
+        command: ["python3.12", "bots-webserver.py"]
+      imagePullSecrets:
+        - name: ghcr-secret

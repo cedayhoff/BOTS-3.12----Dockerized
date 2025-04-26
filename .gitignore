@@ -8,6 +8,10 @@ src/bots/usersys/*
 # Ignore environment variables
 .env
 
+# Kubernetes secrets
+k8s/overlays/production/bots-secret.yaml
+k8s/overlays/production/bots-configmap.yaml
+
 # Python stuff
 __pycache__/
 *.pyc

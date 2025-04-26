@@ -1,0 +1,16 @@
+resources:
+  - ../../base
+
+configMapGenerator:
+  - name: bots-config
+    envs:
+      - bots-configmap.yaml
+
+secretGenerator:
+  - name: bots-secrets
+    envs:
+      - bots-secret.yaml
+
+images:
+  - name: ghcr.io/cedayhoff/bots
+    newTag: v12

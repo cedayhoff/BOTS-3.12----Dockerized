@@ -82,7 +82,7 @@ def action_when_time_out(logger,maxruntime,jobnumber,task_to_run):
 
 def launcher(logger,port,lauchfrequency,maxruntime):
     DEVNULL = open(os.devnull, 'wb')
-    xmlrpcclient = xmlrpclib.ServerProxy('http://jobqueue:' + str(port))
+    xmlrpcclient = xmlrpclib.ServerProxy('http://bots-jobqueue:' + str(port))
     maxseconds = maxruntime * 60
     time.sleep(3)
     nr_runs_NOK = 0

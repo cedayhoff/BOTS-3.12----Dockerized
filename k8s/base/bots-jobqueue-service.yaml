@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bots-jobqueue
+spec:
+  selector:
+    app: bots-jobqueue
+  ports:
+    - protocol: TCP
+      port: 28082
+      targetPort: 28082

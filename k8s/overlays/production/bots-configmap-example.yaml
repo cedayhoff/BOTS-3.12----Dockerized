@@ -1,0 +1,4 @@
+BOTS_DB_ENGINE=postgres
+POSTGRES_HOST=your-postgres-host.example.com
+POSTGRES_PORT=5432
+POSTGRES_DB=yourdatabase

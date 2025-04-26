@@ -56,3 +56,34 @@ Commercial support by EbberConsult, http://www.ebbersconsult.com
    ```bash
    http://localhost:8080
    ```
+
+---
+
+## Running with Kubernetes
+
+Bots can also be deployed to a Kubernetes cluster using `kubectl` and `kustomize`.
+
+### 1. Prepare Environment Files
+
+- Update the values in the the **Example secret files** located in the  k8s/overlays/production/ directory:
+    
+    ```bash
+    `cp k8s/overlays/production/bots-secret.example.yaml k8s/overlays/production/bots-secret.yaml`
+    `cp k8s/overlays/production/bots-configmap.example.yaml k8s/overlays/production/bots-configmap.yaml`
+    ```
+    
+---
+
+### 2. Deploy to Kubernetes
+
+Run the following command from the project root:
+
+```bash
+
+`kubectl apply -k k8s/overlays/production`
+```
+This will:
+
+- Deploy the Bots webserver, dirmonitor, and jobqueue as Kubernetes Deployments.
+- Expose the services via a Kubernetes `Service`.
+- Create environment `ConfigMap` and `Secrets`.

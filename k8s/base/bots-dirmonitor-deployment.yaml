@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bots-dirmonitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bots-dirmonitor
+  template:
+    metadata:
+      labels:
+        app: bots-dirmonitor
+    spec:
+      containers:
+      - name: bots-dirmonitor
+        image: ghcr.io/cedayhoff/bots
+        ports:
+        - containerPort: 8888
+        envFrom:
+          - configMapRef:
+              name: bots-config
+          - secretRef:
+              name: bots-secrets
+        command: ["python3.12", "bots-dirmonitor.py"]
+      imagePullSecrets:
+        - name: ghcr-secret

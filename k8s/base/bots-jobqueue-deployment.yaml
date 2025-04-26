@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bots-jobqueue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bots-jobqueue
+  template:
+    metadata:
+      labels:
+        app: bots-jobqueue
+    spec:
+      containers:
+      - name: bots-jobqueue
+        image: ghcr.io/cedayhoff/bots
+        ports:
+        - containerPort: 28082
+        envFrom:
+          - configMapRef:
+              name: bots-config
+          - secretRef:
+              name: bots-secrets
+        command: ["python3.12", "bots-jobqueueserver.py"]
+      imagePullSecrets:
+        - name: ghcr-secret
