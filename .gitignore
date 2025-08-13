@@ -1,6 +1,8 @@
 # Ignore the SQLite system files and log files
 src/bots/botssys/*
 !src/bots/botssys/sqlitedb/
+src/bots/botssys/sqlitedb/botsdb
+src/bots/install/botsdb
 
 # Ignore the user system files
 src/bots/usersys/*
@@ -8,9 +10,13 @@ src/bots/usersys/*
 # Ignore environment variables
 .env
 
-# Kubernetes secrets
+# Kubernetes secrets and configs with actual credentials
 k8s/overlays/production/bots-secret.yaml
 k8s/overlays/production/bots-configmap.yaml
+
+# First-time setup flag and database config
+.bots_setup_complete
+bots_database_config.json
 
 # Python stuff
 __pycache__/

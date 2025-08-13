@@ -1,29 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: bots-dirmonitor
+  name: bots-engine
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: bots-dirmonitor
+      app: bots-engine
   template:
     metadata:
       labels:
-        app: bots-dirmonitor
+        app: bots-engine
     spec:
       containers:
-      - name: bots-dirmonitor
+      - name: bots-engine
         image: ghcr.io/cedayhoff/bots
         ports:
-        - containerPort: 8888
-        - containerPort: 8883
+        - containerPort: 28081
+        - containerPort: 8884
         envFrom:
           - configMapRef:
               name: bots-config
           - secretRef:
               name: bots-secrets
-        command: ["python3.12", "bots-dirmonitor.py"]
+        command: ["python3.12", "bots-engine.py", "--new"]
         volumeMounts:
         - name: bots-db-volume
           mountPath: /app/bots/botssys/sqlitedb
@@ -34,13 +34,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8883
+            port: 8884
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health
-            port: 8883
+            port: 8884
           initialDelaySeconds: 5
           periodSeconds: 5
       volumes:

@@ -31,6 +31,7 @@ urlpatterns = [
     re_path(r'^filer.*', login_required(views.filer)),
     re_path(r'^srcfiler.*', login_required(views.srcfiler)),
     re_path(r'^logfiler.*', login_required(views.logfiler)),
+    re_path(r'^scheduler.*', login_required(views.scheduler)),
 
     # Admin section
     re_path(r'^admin/', admin.site.urls),   # <-- put this BEFORE catch-all

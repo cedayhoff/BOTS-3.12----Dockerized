@@ -27,7 +27,8 @@
     <div style="float:right; margin-right:20px;">
         <span id="health-dirmonitor">dirmonitor: …</span> | 
         <span id="health-jobqueue">jobqueue: …</span> | 
-        <span id="health-webserver">webserver: …</span>
+        <span id="health-webserver">webserver: …</span> |
+        <span id="health-scheduler">scheduler: …</span>
       </div>
 
       <script>
@@ -45,9 +46,13 @@
           }
         }
         window.addEventListener('DOMContentLoaded', () => {
-          checkHealth('http://localhost:8881/health', 'health-dirmonitor');
-          checkHealth('http://localhost:8883/health', 'health-jobqueue');
-          checkHealth('http://localhost:8882/health', 'health-webserver');
+          // Check health endpoints using the host IP
+          const hostIP = window.location.hostname === 'localhost' ? '10.0.0.138' : window.location.hostname;
+          
+          checkHealth(`http://${hostIP}:8883/health`, 'health-dirmonitor');
+          checkHealth(`http://${hostIP}:8882/health`, 'health-jobqueue');
+          checkHealth(`http://${hostIP}:8881/health`, 'health-webserver');
+          checkHealth(`http://${hostIP}:8885/health`, 'health-scheduler');
         });
       </script>
     {% include "bots/menu.html" %}

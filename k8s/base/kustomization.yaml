@@ -1,7 +1,12 @@
 resources:
+  - bots-pvc.yaml
   - bots-jobqueue-deployment.yaml
   - bots-jobqueue-service.yaml
   - bots-dirmonitor-deployment.yaml
   - bots-dirmonitor-service.yaml
   - bots-webserver-deployment.yaml
   - bots-webserver-service.yaml
+  - bots-engine-deployment.yaml
+  - bots-engine-service.yaml
+  - bots-scheduler-deployment.yaml
+  - bots-scheduler-service.yaml

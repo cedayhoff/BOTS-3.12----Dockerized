@@ -31,4 +31,4 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 CMD ["python3.12", "bots-jobqueueserver.py"]
 
-EXPOSE 8080 8888 28082
+EXPOSE 8080 8881 8882 8883 8888 28082

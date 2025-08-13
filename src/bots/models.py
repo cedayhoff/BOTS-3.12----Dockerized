@@ -596,3 +596,82 @@ class uniek(models.Model):
         db_table = 'uniek'
         verbose_name = 'counter'
         ordering = ['domein']
+
+class routeschedule(models.Model):
+    FREQUENCY_CHOICES = [
+        ('minutes', 'Minutes'),
+        ('hours', 'Hours'),
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
+    ]
+    
+    WEEKDAY_CHOICES = [
+        ('monday', 'Monday'),
+        ('tuesday', 'Tuesday'),
+        ('wednesday', 'Wednesday'),
+        ('thursday', 'Thursday'),
+        ('friday', 'Friday'),
+        ('saturday', 'Saturday'),
+        ('sunday', 'Sunday'),
+    ]
+    
+    name = StripCharField(max_length=100, verbose_name='Schedule Name', help_text='Descriptive name for this schedule')
+    route_id = StripCharField(max_length=35, verbose_name='Route ID', help_text='Route to execute on this schedule')
+    active = models.BooleanField(default=True, help_text='Whether this schedule is active')
+    
+    # Frequency settings
+    frequency = StripCharField(max_length=20, choices=FREQUENCY_CHOICES, default='daily', verbose_name='Frequency')
+    interval = models.PositiveIntegerField(default=1, verbose_name='Interval', help_text='Every X units (e.g., every 2 hours)')
+    
+    # Time settings
+    time_hour = models.PositiveIntegerField(null=True, blank=True, verbose_name='Hour (0-23)', help_text='Hour to run (for daily/weekly/monthly)')
+    time_minute = models.PositiveIntegerField(default=0, verbose_name='Minute (0-59)', help_text='Minute to run')
+    
+    # Weekly settings
+    weekday = StripCharField(max_length=20, choices=WEEKDAY_CHOICES, null=True, blank=True, verbose_name='Day of Week', help_text='For weekly schedules')
+    
+    # Monthly settings
+    day_of_month = models.PositiveIntegerField(null=True, blank=True, verbose_name='Day of Month (1-31)', help_text='For monthly schedules')
+    
+    # Metadata
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
+    last_run = models.DateTimeField(null=True, blank=True, verbose_name='Last Run')
+    next_run = models.DateTimeField(null=True, blank=True, verbose_name='Next Run')
+    
+    # Additional options
+    enabled_only_weekdays = models.BooleanField(default=False, verbose_name='Weekdays Only', help_text='Only run on weekdays (Mon-Fri)')
+    max_retries = models.PositiveIntegerField(default=3, verbose_name='Max Retries', help_text='Maximum retry attempts if schedule fails')
+    
+    class Meta:
+        db_table = 'routeschedule'
+        verbose_name = 'Route Schedule'
+        verbose_name_plural = 'Route Schedules'
+        ordering = ['name']
+    
+    def __str__(self):
+        return f"{self.name} ({self.route_id})"
+    
+    def get_schedule_description(self):
+        """Return human-readable description of the schedule"""
+        if self.frequency == 'minutes':
+            return f"Every {self.interval} minute(s)"
+        elif self.frequency == 'hours':
+            return f"Every {self.interval} hour(s)"
+        elif self.frequency == 'daily':
+            if self.time_hour is not None:
+                return f"Daily at {self.time_hour:02d}:{self.time_minute:02d}"
+            else:
+                return f"Every {self.interval} day(s)"
+        elif self.frequency == 'weekly':
+            if self.weekday and self.time_hour is not None:
+                return f"Weekly on {self.weekday.title()} at {self.time_hour:02d}:{self.time_minute:02d}"
+            else:
+                return f"Every {self.interval} week(s)"
+        elif self.frequency == 'monthly':
+            if self.day_of_month and self.time_hour is not None:
+                return f"Monthly on day {self.day_of_month} at {self.time_hour:02d}:{self.time_minute:02d}"
+            else:
+                return f"Every {self.interval} month(s)"
+        return "Custom schedule"

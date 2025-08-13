@@ -1,0 +1,483 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}Route Scheduler{% endblock %}
+
+{% block extrahead %}
+<style>
+.scheduler-container {
+    max-width: 1400px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.status-panel, .form-panel, .schedule-list-panel {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.job-table, .schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.job-table th, .job-table td, .schedule-table th, .schedule-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.job-table th, .schedule-table th {
+    background-color: #417690;
+    color: white;
+}
+
+.schedule-table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.form-row {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.form-row label {
+    display: inline-block;
+    width: 150px;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.form-row input, .form-row select {
+    width: 250px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.form-row input[type="checkbox"] {
+    width: auto;
+}
+
+.form-row.inline {
+    display: flex;
+    align-items: center;
+}
+
+.form-row.inline input {
+    width: 60px;
+    margin-right: 10px;
+}
+
+.btn {
+    background-color: #417690;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.btn:hover {
+    background-color: #205067;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+}
+
+.btn-success {
+    background-color: #28a745;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.error {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.healthy {
+    color: #2e7d32;
+    font-weight: bold;
+}
+
+.unhealthy {
+    color: #c62828;
+    font-weight: bold;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.schedule-actions {
+    white-space: nowrap;
+}
+
+.conditional-fields {
+    margin-left: 160px;
+    padding: 10px;
+    background: #e9ecef;
+    border-radius: 4px;
+    margin-top: 10px;
+    display: none;
+}
+
+.active-schedule {
+    background-color: #d4edda !important;
+}
+
+.inactive-schedule {
+    background-color: #f8d7da !important;
+}
+</style>
+
+<script>
+function toggleConditionalFields() {
+    const frequency = document.getElementById('frequency').value;
+    const timeFields = document.getElementById('time-fields');
+    const weeklyFields = document.getElementById('weekly-fields');
+    const monthlyFields = document.getElementById('monthly-fields');
+    
+    // Hide all conditional fields first
+    timeFields.style.display = 'none';
+    weeklyFields.style.display = 'none';
+    monthlyFields.style.display = 'none';
+    
+    // Show relevant fields based on frequency
+    if (frequency === 'daily') {
+        timeFields.style.display = 'block';
+    } else if (frequency === 'weekly') {
+        timeFields.style.display = 'block';
+        weeklyFields.style.display = 'block';
+    } else if (frequency === 'monthly') {
+        timeFields.style.display = 'block';
+        monthlyFields.style.display = 'block';
+    }
+}
+
+function confirmDelete(scheduleName) {
+    return confirm('Are you sure you want to delete the schedule "' + scheduleName + '"?');
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="scheduler-container">
+    <h1>Route Scheduler Management</h1>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="{% if message.tags == 'error' %}error{% else %}status-panel{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Scheduler Status Panel -->
+    <div class="status-panel">
+        <h2>Scheduler Status</h2>
+        {% if scheduler_status.error %}
+            <p class="unhealthy">❌ Scheduler unavailable: {{ scheduler_status.error }}</p>
+        {% else %}
+            <p class="healthy">✅ Scheduler running</p>
+            <p><strong>Service:</strong> {{ scheduler_status.service|default:"bots-scheduler" }}</p>
+            <p><strong>Total Jobs:</strong> {{ scheduler_status.total_jobs|default:"0" }}</p>
+            <p><strong>Last Check:</strong> {{ scheduler_status.last_check|default:"Unknown" }}</p>
+            
+            {% if scheduler_status.jobs %}
+                <h3>Active Jobs</h3>
+                <table class="job-table">
+                    <thead>
+                        <tr>
+                            <th>Job Type</th>
+                            <th>Interval</th>
+                            <th>Next Run</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in scheduler_status.jobs %}
+                        <tr>
+                            <td>
+                                {% if "new_messages" in job.job %}
+                                    Process New Messages
+                                {% elif "automaticretrycommunication" in job.job %}
+                                    Retry Communications
+                                {% elif "cleanup" in job.job %}
+                                    Daily Cleanup
+                                {% elif "run_custom_route" in job.job %}
+                                    Custom Route
+                                {% else %}
+                                    {{ job.job|truncatechars:50 }}
+                                {% endif %}
+                            </td>
+                            <td>Every {{ job.interval }} {{ job.unit }}</td>
+                            <td>{{ job.next_run }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="form-grid">
+        <!-- Create New Schedule Panel -->
+        <div class="form-panel">
+            <h2>Create New Schedule</h2>
+            
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_schedule">
+                
+                <div class="form-row">
+                    <label for="name">Schedule Name:</label>
+                    <input type="text" name="name" id="name" required placeholder="e.g., Daily Sales Report">
+                </div>
+                
+                <div class="form-row">
+                    <label for="route_id">Route:</label>
+                    <select name="route_id" id="route_id" required>
+                        <option value="">Select a route...</option>
+                        {% for route_id, route_name in routes %}
+                            <option value="{{ route_id }}">{{ route_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <label for="frequency">Frequency:</label>
+                    <select name="frequency" id="frequency" onchange="toggleConditionalFields()" required>
+                        {% for value, label in frequency_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-row inline">
+                    <label for="interval">Every:</label>
+                    <input type="number" name="interval" id="interval" value="1" min="1" max="999">
+                    <span id="interval-unit">day(s)</span>
+                </div>
+                
+                <!-- Conditional fields for time-based schedules -->
+                <div id="time-fields" class="conditional-fields">
+                    <div class="form-row inline">
+                        <label for="time_hour">Time:</label>
+                        <input type="number" name="time_hour" id="time_hour" min="0" max="23" placeholder="HH">
+                        <span>:</span>
+                        <input type="number" name="time_minute" id="time_minute" min="0" max="59" value="0" placeholder="MM">
+                    </div>
+                </div>
+                
+                <!-- Weekly-specific fields -->
+                <div id="weekly-fields" class="conditional-fields">
+                    <div class="form-row">
+                        <label for="weekday">Day of Week:</label>
+                        <select name="weekday" id="weekday">
+                            <option value="">Any day</option>
+                            {% for value, label in weekday_choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Monthly-specific fields -->
+                <div id="monthly-fields" class="conditional-fields">
+                    <div class="form-row">
+                        <label for="day_of_month">Day of Month:</label>
+                        <input type="number" name="day_of_month" id="day_of_month" min="1" max="31" placeholder="1-31">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="active">Active:</label>
+                    <input type="checkbox" name="active" id="active" checked>
+                </div>
+                
+                <div class="form-row">
+                    <label for="enabled_only_weekdays">Weekdays Only:</label>
+                    <input type="checkbox" name="enabled_only_weekdays" id="enabled_only_weekdays">
+                </div>
+                
+                <div class="form-row">
+                    <label for="max_retries">Max Retries:</label>
+                    <input type="number" name="max_retries" id="max_retries" value="3" min="0" max="10">
+                </div>
+                
+                <div class="form-row">
+                    <label></label>
+                    <button type="submit" class="btn">Create Schedule</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Manual Route Execution Panel -->
+        <div class="form-panel">
+            <h2>Manual Route Execution</h2>
+            <p>Run a route immediately (does not affect scheduled jobs):</p>
+            
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="run_now">
+                
+                <div class="form-row">
+                    <label for="route_name">Route:</label>
+                    <select name="route_name" id="route_name" required>
+                        <option value="">Select a route...</option>
+                        {% for route_id, route_name in routes %}
+                            <option value="{{ route_id }}">{{ route_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <label></label>
+                    <button type="submit" class="btn">Run Now</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Schedules List -->
+    <div class="schedule-list-panel">
+        <h2>Custom Schedules</h2>
+        
+        {% if custom_schedules %}
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Route</th>
+                        <th>Schedule</th>
+                        <th>Status</th>
+                        <th>Last Run</th>
+                        <th>Next Run</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for schedule in custom_schedules %}
+                    <tr class="{% if schedule.active %}active-schedule{% else %}inactive-schedule{% endif %}">
+                        <td><strong>{{ schedule.name }}</strong></td>
+                        <td>{{ schedule.route_id }}</td>
+                        <td>{{ schedule.get_schedule_description }}</td>
+                        <td>
+                            {% if schedule.active %}
+                                <span style="color: green;">Active</span>
+                            {% else %}
+                                <span style="color: red;">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ schedule.last_run|default:"Never" }}</td>
+                        <td>{{ schedule.next_run|default:"Not scheduled" }}</td>
+                        <td class="schedule-actions">
+                            <form method="post" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="toggle_schedule">
+                                <input type="hidden" name="schedule_id" value="{{ schedule.id }}">
+                                <button type="submit" class="btn {% if schedule.active %}btn-warning{% else %}btn-success{% endif %}">
+                                    {% if schedule.active %}Deactivate{% else %}Activate{% endif %}
+                                </button>
+                            </form>
+                            
+                            <form method="post" style="display: inline;" onsubmit="return confirmDelete('{{ schedule.name }}');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_schedule">
+                                <input type="hidden" name="schedule_id" value="{{ schedule.id }}">
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No custom schedules created yet. Use the form above to create your first schedule.</p>
+        {% endif %}
+    </div>
+
+    <!-- Information Panel -->
+    <div class="status-panel">
+        <h2>About Route Scheduling</h2>
+        <p>The Route Scheduler allows you to automate the execution of EDI routes at specific times and intervals.</p>
+        
+        <h3>Schedule Types</h3>
+        <ul>
+            <li><strong>Minutes:</strong> Run every X minutes</li>
+            <li><strong>Hours:</strong> Run every X hours</li>
+            <li><strong>Daily:</strong> Run daily at specific time or every X days</li>
+            <li><strong>Weekly:</strong> Run weekly on specific day/time or every X weeks</li>
+            <li><strong>Monthly:</strong> Run monthly on specific day/time or every X months</li>
+        </ul>
+        
+        <h3>Default System Schedules</h3>
+        <p>The following schedules run automatically and cannot be modified:</p>
+        <ul>
+            <li><strong>Process New Messages:</strong> Every 5 minutes</li>
+            <li><strong>Retry Communications:</strong> Every hour</li>
+            <li><strong>Daily Cleanup:</strong> Daily at 2:00 AM</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+// Initialize conditional fields visibility
+document.addEventListener('DOMContentLoaded', function() {
+    toggleConditionalFields();
+    
+    // Update interval unit text based on frequency
+    document.getElementById('frequency').addEventListener('change', function() {
+        const frequency = this.value;
+        const unitSpan = document.getElementById('interval-unit');
+        
+        switch(frequency) {
+            case 'minutes':
+                unitSpan.textContent = 'minute(s)';
+                break;
+            case 'hours':
+                unitSpan.textContent = 'hour(s)';
+                break;
+            case 'daily':
+                unitSpan.textContent = 'day(s)';
+                break;
+            case 'weekly':
+                unitSpan.textContent = 'week(s)';
+                break;
+            case 'monthly':
+                unitSpan.textContent = 'month(s)';
+                break;
+            default:
+                unitSpan.textContent = 'unit(s)';
+        }
+    });
+});
+</script>
+{% endblock %}

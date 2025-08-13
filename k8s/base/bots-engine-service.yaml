@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bots-engine
+spec:
+  selector:
+    app: bots-engine
+  ports:
+    - name: engine
+      protocol: TCP
+      port: 28081
+      targetPort: 28081
+    - name: health
+      protocol: TCP
+      port: 8884
+      targetPort: 8884

@@ -81,10 +81,14 @@ def action_when_time_out(logger,maxruntime,jobnumber,task_to_run):
                                 })
 
 def launcher(logger,port,lauchfrequency,maxruntime):
+    print(f"DEBUG: Launcher function started with port={port}, freq={lauchfrequency}")
     DEVNULL = open(os.devnull, 'wb')
-    xmlrpcclient = xmlrpclib.ServerProxy('http://bots-jobqueue:' + str(port))
+    print(f"DEBUG: Creating XML-RPC client to localhost:{port}")
+    xmlrpcclient = xmlrpclib.ServerProxy('http://localhost:' + str(port))
     maxseconds = maxruntime * 60
+    print("DEBUG: Sleeping 3 seconds before starting launcher loop...")
     time.sleep(3)
+    print("DEBUG: Starting launcher main loop...")
     nr_runs_NOK = 0
     while True:
         try:
@@ -152,28 +156,33 @@ def start():
     logger.log(25, 'Bots %(process_name)s listens for xmlrpc at port: "%(port)s".',
                 {'process_name':process_name,'port':port})
 
+    print("DEBUG: Getting launcher configuration...")
     lauchfrequency = botsglobal.ini.getint('jobqueue','lauchfrequency',5)
     maxruntime = botsglobal.ini.getint('settings','maxruntime',60)
+    print(f"DEBUG: Config loaded - freq={lauchfrequency}, maxruntime={maxruntime}")
 
+    print(f"DEBUG: About to create launcher thread with port={port}, freq={lauchfrequency}, maxruntime={maxruntime}")
     launcher_thread = threading.Thread(name='launcher', target=launcher,
                                        args=(logger, port, lauchfrequency, maxruntime))
     launcher_thread.daemon = True
+    print("DEBUG: Starting launcher thread...")
     launcher_thread.start()
+    print("DEBUG: Launcher thread started, logging message...")
     logger.info('Jobqueue launcher started.')
-
+    
+    print("DEBUG: About to log server started message...")
     logger.info('Jobqueue server started.')
+    print("DEBUG: Starting HTTP health server...")
     
     threading.Thread(
-        target=HTTPServer(('0.0.0.0', 8888), HealthCheckHandler).serve_forever,
+        target=HTTPServer(('0.0.0.0', 8882), HealthCheckHandler).serve_forever,
         daemon=True
     ).start()
     
     server = SimpleXMLRPCServer(('0.0.0.0', port), logRequests=False)
     server.register_instance(Jobqueue(logger))
     server.register_function(health, 'health')
-    server.serve_forever()
-    server.register_instance(Jobqueue(logger))
-
+    
     try:
         server.serve_forever()
     except (KeyboardInterrupt, SystemExit):

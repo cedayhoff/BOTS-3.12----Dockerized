@@ -153,7 +153,7 @@ def start():
 
     '''%{'name':os.path.basename(sys.argv[0]),'version':botsglobal.version}
     threading.Thread(
-        target=HTTPServer(('0.0.0.0', 8888), HealthCheckHandler).serve_forever,
+        target=HTTPServer(('0.0.0.0', 8883), HealthCheckHandler).serve_forever,
         daemon=True
     ).start()
         

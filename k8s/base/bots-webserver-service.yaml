@@ -6,6 +6,11 @@ spec:
   selector:
     app: bots-webserver
   ports:
-    - protocol: TCP
+    - name: web
+      protocol: TCP
       port: 8080
       targetPort: 8080
+    - name: health
+      protocol: TCP
+      port: 8881
+      targetPort: 8881

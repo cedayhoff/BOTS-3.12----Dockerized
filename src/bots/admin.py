@@ -268,6 +268,36 @@ class UniekAdmin(BotsAdmin):     #AKA counters
     )
 admin.site.register(models.uniek,UniekAdmin)
 
+class RouteScheduleAdmin(BotsAdmin):
+    list_display = ('name', 'route_id', 'active', 'frequency', 'get_schedule_description', 'last_run', 'next_run')
+    list_display_links = ('name',)
+    list_filter = ('active', 'frequency', 'route_id')
+    search_fields = ('name', 'route_id')
+    ordering = ('name',)
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'route_id', 'active'),
+            'classes': ('wide extrapretty',)
+        }),
+        ('Schedule Settings', {
+            'fields': ('frequency', 'interval', 'time_hour', 'time_minute'),
+            'classes': ('wide extrapretty',)
+        }),
+        ('Advanced Options', {
+            'fields': ('weekday', 'day_of_month', 'enabled_only_weekdays', 'max_retries'),
+            'classes': ('collapse wide extrapretty',)
+        }),
+        ('Status', {
+            'fields': ('last_run', 'next_run'),
+            'classes': ('collapse wide extrapretty',)
+        }),
+    )
+    
+    readonly_fields = ('last_run', 'next_run', 'created_date', 'modified_date')
+
+admin.site.register(models.routeschedule, RouteScheduleAdmin)
+
 #User - change the default display of user screen
 UserAdmin.list_display = ('username', 'first_name', 'last_name','email', 'is_active', 'is_staff', 'is_superuser', 'date_joined','last_login')
 admin.site.unregister(User)

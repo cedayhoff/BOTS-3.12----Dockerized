@@ -6,6 +6,11 @@ spec:
   selector:
     app: bots-jobqueue
   ports:
-    - protocol: TCP
+    - name: service
+      protocol: TCP
       port: 28082
       targetPort: 28082
+    - name: health
+      protocol: TCP
+      port: 8882
+      targetPort: 8882

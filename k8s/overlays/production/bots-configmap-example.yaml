@@ -1,3 +1,6 @@
+# Copy this file to bots-configmap.yaml and replace with your actual values
+# Note: For first-time setup, use the web interface instead of manually creating this file
+# Database engine: 'sqlite' for development, 'postgres' for production
 BOTS_DB_ENGINE=postgres
 POSTGRES_HOST=your-postgres-host.example.com
 POSTGRES_PORT=5432

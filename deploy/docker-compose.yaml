@@ -1,3 +1,9 @@
+volumes:
+  bots-db:
+  bots-config:
+  bots-data:
+  bots-setup:  # For setup completion flag persistence
+
 services:
   jobqueue:
     build:
@@ -7,16 +13,21 @@ services:
     hostname: bots-jobqueue
     ports:
       - "28082:28082"
-      - "8883:8888"
+      - "8882:8882"
     restart: unless-stopped
     command: ["python3.12", "bots-jobqueueserver.py"]
+    volumes:
+      - bots-db:/app/bots/botssys/sqlitedb
+      - bots-config:/app/bots/config
+      - bots-data:/app/bots/botssys/data
+      - bots-setup:/app
     environment:
-      - BOTS_DB_ENGINE=${BOTS_DB_ENGINE}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - BOTS_DB_ENGINE=${BOTS_DB_ENGINE:-}
+      - POSTGRES_HOST=${POSTGRES_HOST:-}
+      - POSTGRES_PORT=${POSTGRES_PORT:-}
+      - POSTGRES_USER=${POSTGRES_USER:-}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
+      - POSTGRES_DB=${POSTGRES_DB:-}
 
   dirmonitor:
     build:
@@ -25,16 +36,22 @@ services:
     container_name: bots-dirmonitor
     hostname: bots-dirmonitor
     ports:
-      - "8881:8888"
+      - "8888:8888"
+      - "8883:8883"
     restart: unless-stopped
     command: ["python3.12", "bots-dirmonitor.py"]
+    volumes:
+      - bots-db:/app/bots/botssys/sqlitedb
+      - bots-config:/app/bots/config
+      - bots-data:/app/bots/botssys/data
+      - bots-setup:/app
     environment:
-      - BOTS_DB_ENGINE=${BOTS_DB_ENGINE}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - BOTS_DB_ENGINE=${BOTS_DB_ENGINE:-}
+      - POSTGRES_HOST=${POSTGRES_HOST:-}
+      - POSTGRES_PORT=${POSTGRES_PORT:-}
+      - POSTGRES_USER=${POSTGRES_USER:-}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
+      - POSTGRES_DB=${POSTGRES_DB:-}
 
   webserver:
     build:
@@ -44,13 +61,46 @@ services:
     hostname: bots-webserver
     ports:
       - "8080:8080"
-      - "8882:8888"
+      - "8881:8881"
+      - "9000:9000"  # Setup interface port
     restart: unless-stopped
     command: ["python3.12", "bots-webserver.py"]
+    volumes:
+      - bots-db:/app/bots/botssys/sqlitedb
+      - bots-config:/app/bots/config
+      - bots-data:/app/bots/botssys/data
+      - bots-setup:/app  # Persistent setup completion flag
     environment:
-      - BOTS_DB_ENGINE=${BOTS_DB_ENGINE}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - BOTS_DB_ENGINE=${BOTS_DB_ENGINE:-}
+      - POSTGRES_HOST=${POSTGRES_HOST:-}
+      - POSTGRES_PORT=${POSTGRES_PORT:-}
+      - POSTGRES_USER=${POSTGRES_USER:-}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
+      - POSTGRES_DB=${POSTGRES_DB:-}
+      - DJANGO_SETTINGS_MODULE=bots.config.settings
+      - PYTHONPATH=/app
+
+  scheduler:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: bots-scheduler
+    hostname: bots-scheduler
+    ports:
+      - "8885:8884"
+    restart: unless-stopped
+    command: ["python3.12", "bots-scheduler.py"]
+    volumes:
+      - bots-db:/app/bots/botssys/sqlitedb
+      - bots-config:/app/bots/config
+      - bots-data:/app/bots/botssys/data
+      - bots-setup:/app
+    environment:
+      - BOTS_DB_ENGINE=${BOTS_DB_ENGINE:-}
+      - POSTGRES_HOST=${POSTGRES_HOST:-}
+      - POSTGRES_PORT=${POSTGRES_PORT:-}
+      - POSTGRES_USER=${POSTGRES_USER:-}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
+      - POSTGRES_DB=${POSTGRES_DB:-}
+      - DJANGO_SETTINGS_MODULE=bots.config.settings
+      - PYTHONPATH=/app

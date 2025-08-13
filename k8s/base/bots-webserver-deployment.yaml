@@ -17,11 +17,41 @@ spec:
         image: ghcr.io/cedayhoff/bots
         ports:
         - containerPort: 8080
+        - containerPort: 8881
         envFrom:
           - configMapRef:
               name: bots-config
           - secretRef:
               name: bots-secrets
         command: ["python3.12", "bots-webserver.py"]
+        volumeMounts:
+        - name: bots-db-volume
+          mountPath: /app/bots/botssys/sqlitedb
+        - name: bots-config-volume
+          mountPath: /app/bots/config
+        - name: bots-data-volume
+          mountPath: /app/bots/botssys/data
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8881
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8881
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: bots-db-volume
+        persistentVolumeClaim:
+          claimName: bots-db-pvc
+      - name: bots-config-volume
+        persistentVolumeClaim:
+          claimName: bots-config-pvc
+      - name: bots-data-volume
+        persistentVolumeClaim:
+          claimName: bots-data-pvc
       imagePullSecrets:
         - name: ghcr-secret

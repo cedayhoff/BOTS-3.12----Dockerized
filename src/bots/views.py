@@ -8,6 +8,7 @@ import traceback
 import socket
 import django
 from django.contrib import messages
+from django.http import JsonResponse
 from . import forms
 from . import models
 from . import viewlib
@@ -745,4 +746,233 @@ def sendtestmailmanagers(request,*kw,**kwargs):
     messages.add_message(request, messages.INFO, notification)
     botsglobal.logger.info(notification)
     return django.shortcuts.redirect('/home')
+
+def scheduler(request, *kw, **kwargs):
+    """View for managing route schedules"""
+    if request.method == 'GET':
+        # Get list of available routes
+        route_list = models.routes.objects.filter(active=True).values_list('idroute', flat=True).distinct().order_by('idroute')
+        route_choices = [(route, route) for route in route_list]
+        
+        # Get custom schedules from scheduler API
+        custom_schedules = []
+        try:
+            host_ip = request.get_host().split(':')[0]
+            if host_ip == 'localhost':
+                host_ip = '10.0.0.138'  # Use the working IP for Docker
+            
+            # Get schedules from scheduler API
+            import urllib.request
+            import json
+            
+            url = f'http://{host_ip}:8885/schedules'
+            with urllib.request.urlopen(url, timeout=5) as response:
+                if response.getcode() == 200:
+                    result = json.loads(response.read().decode())
+                    if result.get('status') == 'success':
+                        # Convert API response to objects for template compatibility
+                        class ScheduleObj:
+                            def __init__(self, data):
+                                for key, value in data.items():
+                                    setattr(self, key, value)
+                            
+                            def get_schedule_description(self):
+                                return self.description
+                        
+                        custom_schedules = [ScheduleObj(schedule) for schedule in result.get('schedules', [])]
+                    
+        except Exception as e:
+            custom_schedules = []
+            print(f"Scheduler API error: {str(e)}")  # Debug logging
+        
+        # Get current scheduler status
+        scheduler_status = {}
+        try:
+            # Try to get scheduler status from health endpoint
+            import urllib.request
+            import json
+            
+            host_ip = request.get_host().split(':')[0]
+            if host_ip == 'localhost':
+                host_ip = '10.0.0.138'  # Use the working IP for Docker
+            
+            # Use port 8885 as configured in docker-compose
+            url = f'http://{host_ip}:8885/status'
+            with urllib.request.urlopen(url, timeout=5) as response:
+                if response.getcode() == 200:
+                    scheduler_status = json.loads(response.read().decode())
+        except Exception as e:
+            scheduler_status = {'error': str(e)}
+        
+        context = {
+            'routes': route_choices,
+            'custom_schedules': custom_schedules,
+            'scheduler_status': scheduler_status,
+            'title': 'Route Scheduler',
+            'frequency_choices': models.routeschedule.FREQUENCY_CHOICES,
+            'weekday_choices': models.routeschedule.WEEKDAY_CHOICES,
+        }
+        return render(request, 'bots/scheduler.html', context)
+    
+    elif request.method == 'POST':
+        # Handle schedule creation/modification
+        action = request.POST.get('action')
+        
+        if action == 'run_now':
+            route_name = request.POST.get('route_name')
+            if route_name:
+                try:
+                    # Run the route immediately via engine
+                    engine_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'bots-engine.py')
+                    cmd = [sys.executable, engine_path, route_name]
+                    result = subprocess.Popen(cmd)
+                    messages.add_message(request, messages.INFO, f'Route "{route_name}" started manually (PID: {result.pid})')
+                except Exception as e:
+                    messages.add_message(request, messages.ERROR, f'Failed to run route "{route_name}": {str(e)}')
+        
+        elif action == 'create_schedule':
+            try:
+                # Prepare schedule data for API
+                schedule_data = {
+                    'name': request.POST.get('name', '').strip(),
+                    'route_id': request.POST.get('route_id', '').strip(),
+                    'frequency': request.POST.get('frequency', 'daily'),
+                    'interval': int(request.POST.get('interval', 1)),
+                    'active': request.POST.get('active') == 'on'
+                }
+                
+                # Time settings
+                time_hour = request.POST.get('time_hour')
+                if time_hour:
+                    schedule_data['time_hour'] = int(time_hour)
+                time_minute = request.POST.get('time_minute')
+                if time_minute:
+                    schedule_data['time_minute'] = int(time_minute)
+                
+                # Weekly/monthly settings
+                weekday = request.POST.get('weekday')
+                if weekday:
+                    schedule_data['weekday'] = weekday
+                    
+                day_of_month = request.POST.get('day_of_month')
+                if day_of_month:
+                    schedule_data['day_of_month'] = int(day_of_month)
+                
+                # Additional options
+                schedule_data['enabled_only_weekdays'] = request.POST.get('enabled_only_weekdays') == 'on'
+                max_retries = request.POST.get('max_retries')
+                if max_retries:
+                    schedule_data['max_retries'] = int(max_retries)
+                
+                # Validate required fields
+                if not schedule_data['name']:
+                    messages.add_message(request, messages.ERROR, 'Schedule name is required')
+                elif not schedule_data['route_id']:
+                    messages.add_message(request, messages.ERROR, 'Route ID is required')
+                else:
+                    # Send to scheduler API
+                    import urllib.request
+                    import json
+                    
+                    host_ip = request.get_host().split(':')[0]
+                    if host_ip == 'localhost':
+                        host_ip = '10.0.0.138'
+                    
+                    url = f'http://{host_ip}:8885/schedules'
+                    data = json.dumps(schedule_data).encode('utf-8')
+                    
+                    req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+                    req.get_method = lambda: 'POST'
+                    
+                    with urllib.request.urlopen(req, timeout=10) as response:
+                        result = json.loads(response.read().decode())
+                        if result.get('status') == 'success':
+                            messages.add_message(request, messages.INFO, f'Schedule "{schedule_data["name"]}" created successfully')
+                        else:
+                            messages.add_message(request, messages.ERROR, f'Failed to create schedule: {result.get("message", "Unknown error")}')
+                        
+            except Exception as e:
+                messages.add_message(request, messages.ERROR, f'Failed to create schedule: {str(e)}')
+        
+        elif action == 'delete_schedule':
+            try:
+                schedule_id = request.POST.get('schedule_id')
+                if schedule_id:
+                    # Send delete request to scheduler API
+                    import urllib.request
+                    import json
+                    
+                    host_ip = request.get_host().split(':')[0]
+                    if host_ip == 'localhost':
+                        host_ip = '10.0.0.138'
+                    
+                    url = f'http://{host_ip}:8885/schedules/{schedule_id}'
+                    req = urllib.request.Request(url)
+                    req.get_method = lambda: 'DELETE'
+                    
+                    with urllib.request.urlopen(req, timeout=10) as response:
+                        result = json.loads(response.read().decode())
+                        if result.get('status') == 'success':
+                            messages.add_message(request, messages.INFO, result.get('message', 'Schedule deleted successfully'))
+                        else:
+                            messages.add_message(request, messages.ERROR, f'Failed to delete schedule: {result.get("message", "Unknown error")}')
+                        
+            except Exception as e:
+                messages.add_message(request, messages.ERROR, f'Failed to delete schedule: {str(e)}')
+        
+        elif action == 'toggle_schedule':
+            # For toggle, we need to first get the current state, then update it
+            try:
+                schedule_id = request.POST.get('schedule_id')
+                if schedule_id:
+                    import urllib.request
+                    import json
+                    
+                    host_ip = request.get_host().split(':')[0]
+                    if host_ip == 'localhost':
+                        host_ip = '10.0.0.138'
+                    
+                    # First get current schedule data
+                    url = f'http://{host_ip}:8885/schedules'
+                    with urllib.request.urlopen(url, timeout=5) as response:
+                        result = json.loads(response.read().decode())
+                        if result.get('status') == 'success':
+                            # Find the schedule to toggle
+                            target_schedule = None
+                            for schedule in result.get('schedules', []):
+                                if str(schedule['id']) == str(schedule_id):
+                                    target_schedule = schedule
+                                    break
+                            
+                            if target_schedule:
+                                # Delete the old schedule
+                                delete_url = f'http://{host_ip}:8885/schedules/{schedule_id}'
+                                delete_req = urllib.request.Request(delete_url)
+                                delete_req.get_method = lambda: 'DELETE'
+                                urllib.request.urlopen(delete_req, timeout=10)
+                                
+                                # Create new schedule with toggled active status
+                                target_schedule['active'] = not target_schedule['active']
+                                
+                                create_url = f'http://{host_ip}:8885/schedules'
+                                data = json.dumps(target_schedule).encode('utf-8')
+                                create_req = urllib.request.Request(create_url, data=data, headers={'Content-Type': 'application/json'})
+                                create_req.get_method = lambda: 'POST'
+                                
+                                with urllib.request.urlopen(create_req, timeout=10) as create_response:
+                                    create_result = json.loads(create_response.read().decode())
+                                    if create_result.get('status') == 'success':
+                                        status = 'activated' if target_schedule['active'] else 'deactivated'
+                                        messages.add_message(request, messages.INFO, f'Schedule "{target_schedule["name"]}" {status}')
+                                    else:
+                                        messages.add_message(request, messages.ERROR, f'Failed to toggle schedule: {create_result.get("message", "Unknown error")}')
+                            else:
+                                messages.add_message(request, messages.ERROR, 'Schedule not found')
+                        else:
+                            messages.add_message(request, messages.ERROR, 'Failed to get schedule data')
+                        
+            except Exception as e:
+                messages.add_message(request, messages.ERROR, f'Failed to toggle schedule: {str(e)}')
+        
+        return django.shortcuts.redirect('/scheduler')
 

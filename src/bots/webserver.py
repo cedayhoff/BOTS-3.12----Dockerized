@@ -98,7 +98,7 @@ def start():
     #***start the cherrypy webserver.************************************************
     try:
         threading.Thread(
-            target=HTTPServer(('0.0.0.0', 8888), HealthCheckHandler).serve_forever,
+            target=HTTPServer(('0.0.0.0', 8881), HealthCheckHandler).serve_forever,
             daemon=True
         ).start()
         
